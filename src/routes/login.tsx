@@ -62,7 +62,7 @@ function LoginPage() {
         <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary">
           <Leaf className="h-8 w-8 text-primary-foreground" />
         </div>
-        <h1 className="font-display text-2xl font-bold text-foreground">NutriCare</h1>
+        <h1 className="font-display text-2xl font-bold text-foreground">MKR Clinic</h1>
         <p className="mt-1 text-sm text-muted-foreground">Your nutrition journey, simplified</p>
       </div>
 

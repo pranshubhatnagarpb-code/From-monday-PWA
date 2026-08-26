@@ -1,6 +1,6 @@
 {
-  "name": "MKR Care — Client Portal",
-  "short_name": "MKR Care",
+  "name": "MKR Clinic — Client Portal",
+  "short_name": "MKR Clinic",
   "start_url": "/dashboard",
   "display": "standalone",
   "background_color": "#ffffff",
