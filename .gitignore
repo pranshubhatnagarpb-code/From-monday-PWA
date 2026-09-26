@@ -35,3 +35,6 @@ dist-ssr
 .env
 .env/
 .env.*
+
+# Editor local history (may contain copies of secrets)
+.history/
