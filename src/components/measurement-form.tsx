@@ -5,13 +5,14 @@ import { X, Plus } from "lucide-react";
 type Field = {
   key:
     | "weight"
-    | "body_fat_percentage"
+    | "body_fat_percent"
     | "waist"
     | "hip"
     | "chest"
     | "thigh"
     | "arm"
-    | "neck";
+    | "neck"
+    | "calf";
   label: string;
   unit: string;
   step: string;
@@ -19,13 +20,14 @@ type Field = {
 
 const FIELDS: Field[] = [
   { key: "weight", label: "Weight", unit: "kg", step: "0.1" },
-  { key: "body_fat_percentage", label: "Body Fat", unit: "%", step: "0.1" },
+  { key: "body_fat_percent", label: "Body Fat", unit: "%", step: "0.1" },
   { key: "waist", label: "Waist", unit: "cm", step: "0.1" },
   { key: "hip", label: "Hip", unit: "cm", step: "0.1" },
   { key: "chest", label: "Chest", unit: "cm", step: "0.1" },
   { key: "thigh", label: "Thigh", unit: "cm", step: "0.1" },
   { key: "arm", label: "Arm", unit: "cm", step: "0.1" },
   { key: "neck", label: "Neck", unit: "cm", step: "0.1" },
+  { key: "calf", label: "Calf", unit: "cm", step: "0.1" },
 ];
 
 interface Props {
@@ -79,12 +81,12 @@ export function MeasurementForm({ clientId, heightCm, onClose, onSaved }: Props)
     }
 
     setSaving(true);
-    const { error: insErr } = await supabase.from("client_measurements").insert({
+    const { error: insErr } = await supabase.from("body_measurements").insert({
       client_id: clientId,
       measurement_date: date,
       ...numeric,
       bmi,
-      measurement_notes: notes.trim() || null,
+      notes: notes.trim() || null,
     });
     setSaving(false);
 

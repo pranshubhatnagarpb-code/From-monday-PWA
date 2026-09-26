@@ -29,44 +29,47 @@ export const Route = createFileRoute("/progress")({
 type MetricKey =
   | "weight"
   | "bmi"
-  | "body_fat_percentage"
+  | "body_fat_percent"
   | "waist"
   | "hip"
   | "chest"
   | "thigh"
   | "arm"
-  | "neck";
+  | "neck"
+  | "calf";
 
 const METRIC_LABEL: Record<MetricKey, string> = {
   weight: "Weight",
   bmi: "BMI",
-  body_fat_percentage: "Body Fat",
+  body_fat_percent: "Body Fat",
   waist: "Waist",
   hip: "Hip",
   chest: "Chest",
   thigh: "Thigh",
   arm: "Arm",
   neck: "Neck",
+  calf: "Calf",
 };
 
 const METRIC_UNIT: Record<MetricKey, string> = {
   weight: "kg",
   bmi: "",
-  body_fat_percentage: "%",
+  body_fat_percent: "%",
   waist: "cm",
   hip: "cm",
   chest: "cm",
   thigh: "cm",
   arm: "cm",
   neck: "cm",
+  calf: "cm",
 };
 
-const SUMMARY_METRICS: MetricKey[] = ["weight", "bmi", "waist", "hip", "body_fat_percentage"];
+const SUMMARY_METRICS: MetricKey[] = ["weight", "bmi", "waist", "hip", "body_fat_percent"];
 const CHART_METRICS: MetricKey[] = ["weight", "bmi", "waist"];
 
 // Lower is better for these metrics
 const LOWER_IS_BETTER: MetricKey[] = [
-  "weight", "bmi", "body_fat_percentage", "waist", "hip", "chest", "thigh", "arm", "neck",
+  "weight", "bmi", "body_fat_percent", "waist", "hip", "chest", "thigh", "arm", "neck", "calf",
 ];
 
 interface MetricTrend {
@@ -212,19 +215,20 @@ function OverallAnalysisCard({ measurements }: { measurements: ClientMeasurement
 const HISTORY_METRICS: MetricKey[] = [
   "weight",
   "bmi",
-  "body_fat_percentage",
+  "body_fat_percent",
   "waist",
   "hip",
   "chest",
   "thigh",
   "arm",
   "neck",
+  "calf",
 ];
 
 function MetricIcon({ k }: { k: MetricKey }): ReactNode {
   if (k === "weight") return <Scale className="h-4 w-4" />;
   if (k === "bmi") return <Activity className="h-4 w-4" />;
-  if (k === "body_fat_percentage") return <Percent className="h-4 w-4" />;
+  if (k === "body_fat_percent") return <Percent className="h-4 w-4" />;
   return <Ruler className="h-4 w-4" />;
 }
 
@@ -248,7 +252,7 @@ function ProgressPage() {
     if (!clientProfile) return;
     const [measRes, entriesRes] = await Promise.all([
       supabase
-        .from("client_measurements")
+        .from("body_measurements")
         .select("*")
         .eq("client_id", clientProfile.id)
         .order("measurement_date", { ascending: true }),
@@ -526,7 +530,7 @@ function ProgressPage() {
                 const visibleMetrics = HISTORY_METRICS.filter(
                   (k) => m[k] !== null && m[k] !== undefined
                 );
-                const note = m.measurement_notes ?? m.notes ?? null;
+                const note = m.notes ?? null;
                 return (
                   <div
                     key={m.id}

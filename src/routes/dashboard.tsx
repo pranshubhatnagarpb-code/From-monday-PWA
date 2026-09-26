@@ -54,7 +54,7 @@ function DashboardPage() {
           .limit(1)
           .maybeSingle(),
         supabase
-          .from("client_measurements")
+          .from("body_measurements")
           .select("*")
           .eq("client_id", clientProfile.id)
           .order("measurement_date", { ascending: false })

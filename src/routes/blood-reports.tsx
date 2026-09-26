@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { supabase } from "@/lib/supabase";
-import type { ClientBloodReport } from "@/lib/types";
+import type { BloodMarkerKey, BloodReportValues, ClientBloodReport } from "@/lib/types";
 import { PageShell } from "@/components/app-shell";
 import { EmptyState, LoadingSpinner } from "@/components/ui-cards";
 import { FlaskConical, Plus, X, FileText, AlertCircle } from "lucide-react";
@@ -20,33 +20,31 @@ export const Route = createFileRoute("/blood-reports")({
   component: BloodReportsPage,
 });
 
-// Numeric extracted_data fields we know how to chart.
-// Backend extraction is not yet wired, so this list is what the client
-// can manually fill until the PMS auto-extraction lands.
-const TRACKED_KEYS = [
+// Mirrors PMS's blood_report_values columns (src/lib/bloodMarkers.ts).
+const TRACKED_KEYS: { key: BloodMarkerKey; label: string; unit: string }[] = [
   { key: "hemoglobin", label: "Hemoglobin", unit: "g/dL" },
-  { key: "vitamin_d", label: "Vitamin D", unit: "ng/mL" },
-  { key: "vitamin_b12", label: "Vitamin B12", unit: "pg/mL" },
-  { key: "fasting_glucose", label: "Fasting Glucose", unit: "mg/dL" },
+  { key: "fasting_blood_sugar", label: "Fasting Blood Sugar", unit: "mg/dL" },
+  { key: "postprandial_blood_sugar", label: "Postprandial Blood Sugar", unit: "mg/dL" },
   { key: "hba1c", label: "HbA1c", unit: "%" },
   { key: "total_cholesterol", label: "Total Cholesterol", unit: "mg/dL" },
-  { key: "ldl", label: "LDL", unit: "mg/dL" },
-  { key: "hdl", label: "HDL", unit: "mg/dL" },
   { key: "triglycerides", label: "Triglycerides", unit: "mg/dL" },
-  { key: "tsh", label: "TSH", unit: "mIU/L" },
-] as const;
+  { key: "hdl", label: "HDL", unit: "mg/dL" },
+  { key: "ldl", label: "LDL", unit: "mg/dL" },
+  { key: "vldl", label: "VLDL", unit: "mg/dL" },
+  { key: "vitamin_d", label: "Vitamin D", unit: "ng/mL" },
+  { key: "vitamin_b12", label: "Vitamin B12", unit: "pg/mL" },
+  { key: "tsh", label: "TSH", unit: "µIU/mL" },
+  { key: "uric_acid", label: "Uric Acid", unit: "mg/dL" },
+  { key: "creatinine", label: "Creatinine", unit: "mg/dL" },
+  { key: "iron", label: "Iron", unit: "µg/dL" },
+  { key: "ferritin", label: "Ferritin", unit: "ng/mL" },
+  { key: "calcium", label: "Calcium", unit: "mg/dL" },
+];
 
-type TrackedKey = (typeof TRACKED_KEYS)[number]["key"];
-
-function getNumeric(data: Record<string, unknown> | null, k: string): number | null {
-  if (!data) return null;
-  const v = data[k];
-  if (typeof v === "number" && Number.isFinite(v)) return v;
-  if (typeof v === "string") {
-    const n = Number(v);
-    if (!Number.isNaN(n)) return n;
-  }
-  return null;
+function flattenValues(row: ClientBloodReport): BloodReportValues | null {
+  const v = row.blood_report_values;
+  if (!v) return null;
+  return Array.isArray(v) ? (v[0] ?? null) : v;
 }
 
 function BloodReportsPage() {
@@ -63,8 +61,8 @@ function BloodReportsPage() {
   const load = useCallback(async () => {
     if (!clientProfile) return;
     const { data } = await supabase
-      .from("client_blood_reports")
-      .select("*")
+      .from("blood_reports")
+      .select("*, blood_report_values(*)")
       .eq("client_id", clientProfile.id)
       .order("report_date", { ascending: true });
     setReports((data ?? []) as ClientBloodReport[]);
@@ -79,8 +77,9 @@ function BloodReportsPage() {
     return TRACKED_KEYS.map((t) => {
       const series = reports
         .map((r) => {
-          const v = getNumeric(r.extracted_data, t.key);
-          if (v === null || !r.report_date) return null;
+          const values = flattenValues(r);
+          const v = values?.[t.key];
+          if (typeof v !== "number" || !r.report_date) return null;
           return {
             date: new Date(r.report_date).toLocaleDateString("en-IN", {
               day: "numeric",
@@ -116,10 +115,7 @@ function BloodReportsPage() {
 
       <div className="mb-5 flex items-start gap-2 rounded-xl border bg-muted/50 px-3 py-2.5 text-xs text-muted-foreground">
         <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-        <p>
-          PDF upload and auto-extraction will be enabled once the backend storage
-          fields are added. For now you can log key values manually.
-        </p>
+        <p>Your nutritionist may also upload lab reports directly to your file.</p>
       </div>
 
       {loading ? (
@@ -187,10 +183,11 @@ function BloodReportsPage() {
             </h3>
             <div className="space-y-2">
               {[...reports].reverse().map((r) => {
+                const values = flattenValues(r);
                 const filled = TRACKED_KEYS.map((t) => ({
                   ...t,
-                  value: getNumeric(r.extracted_data, t.key),
-                })).filter((x) => x.value !== null);
+                  value: values?.[t.key],
+                })).filter((x): x is typeof x & { value: number } => typeof x.value === "number");
                 return (
                   <div key={r.id} className="rounded-2xl border bg-card p-4">
                     <div className="mb-2 flex items-center gap-2">
@@ -208,7 +205,7 @@ function BloodReportsPage() {
                             : "Undated report"}
                         </p>
                         <p className="text-[11px] text-muted-foreground">
-                          Logged {new Date(r.created_at).toLocaleDateString("en-IN")}
+                          {r.lab_name ? r.lab_name : `Logged ${new Date(r.created_at).toLocaleDateString("en-IN")}`}
                         </p>
                       </div>
                     </div>
@@ -266,19 +263,20 @@ interface FormProps {
 function BloodReportForm({ clientId, onClose, onSaved }: FormProps) {
   const today = new Date().toISOString().slice(0, 10);
   const [date, setDate] = useState(today);
+  const [labName, setLabName] = useState("");
   const [values, setValues] = useState<Record<string, string>>({});
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const setVal = (k: TrackedKey, v: string) =>
+  const setVal = (k: BloodMarkerKey, v: string) =>
     setValues((p) => ({ ...p, [k]: v }));
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    const extracted: Record<string, number> = {};
+    const extracted: BloodReportValues = {};
     for (const t of TRACKED_KEYS) {
       const raw = values[t.key]?.trim();
       if (!raw) continue;
@@ -296,15 +294,30 @@ function BloodReportForm({ clientId, onClose, onSaved }: FormProps) {
     }
 
     setSaving(true);
-    const { error: insErr } = await supabase.from("client_blood_reports").insert({
-      client_id: clientId,
-      report_date: date,
-      extracted_data: extracted,
-      notes: notes.trim() || null,
+    const { data: report, error: reportErr } = await supabase
+      .from("blood_reports")
+      .insert({
+        client_id: clientId,
+        report_date: date,
+        lab_name: labName.trim() || null,
+        notes: notes.trim() || null,
+      })
+      .select()
+      .single();
+
+    if (reportErr || !report) {
+      setSaving(false);
+      setError(reportErr?.message ?? "Could not save report");
+      return;
+    }
+
+    const { error: valuesErr } = await supabase.from("blood_report_values").insert({
+      report_id: report.id,
+      ...extracted,
     });
     setSaving(false);
-    if (insErr) {
-      setError(insErr.message);
+    if (valuesErr) {
+      setError(valuesErr.message);
       return;
     }
     onSaved();
@@ -328,18 +341,32 @@ function BloodReportForm({ clientId, onClose, onSaved }: FormProps) {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Report Date
-            </label>
-            <input
-              type="date"
-              value={date}
-              max={today}
-              required
-              onChange={(e) => setDate(e.target.value)}
-              className="w-full rounded-xl border bg-card px-4 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Report Date
+              </label>
+              <input
+                type="date"
+                value={date}
+                max={today}
+                required
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full rounded-xl border bg-card px-4 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Lab Name
+              </label>
+              <input
+                type="text"
+                value={labName}
+                onChange={(e) => setLabName(e.target.value)}
+                placeholder="Optional"
+                className="w-full rounded-xl border bg-card px-4 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -371,7 +398,7 @@ function BloodReportForm({ clientId, onClose, onSaved }: FormProps) {
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               maxLength={500}
-              placeholder="Lab name, doctor, observations…"
+              placeholder="Doctor, observations…"
               className="w-full rounded-xl border bg-card px-4 py-2.5 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>

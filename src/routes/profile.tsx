@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useEffect } from "react";
 import { PageShell } from "@/components/app-shell";
 import { LoadingSpinner } from "@/components/ui-cards";
+import { InstallAppCard } from "@/components/install-prompt";
 import { User, Mail, Phone, MapPin, Heart, Ruler, Scale, Target, Calendar } from "lucide-react";
 
 export const Route = createFileRoute("/profile")({
@@ -103,8 +104,12 @@ function ProfilePage() {
         <ProfileField
           icon={<Heart className="h-4 w-4" />}
           label="Health Conditions"
-          value={p?.health_conditions}
+          value={p?.health_conditions?.length ? p.health_conditions.join(", ") : null}
         />
+      </div>
+
+      <div className="mt-5">
+        <InstallAppCard />
       </div>
     </PageShell>
   );

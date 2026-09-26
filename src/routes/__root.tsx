@@ -1,5 +1,6 @@
 import { Outlet, Link, createRootRoute } from "@tanstack/react-router";
 import { AuthProvider } from "@/hooks/use-auth";
+import { InstallBanner } from "@/components/install-prompt";
 import "../styles.css";
 
 function NotFoundComponent() {
@@ -29,8 +30,8 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "MKR Clinic — Client Portal" },
-      { name: "description", content: "Your personal nutrition journey" },
+      { title: "From Monday | Client Portal" },
+      { name: "description", content: "Decoding Nutrition — your personal nutrition journey" },
     ],
   }),
   component: RootComponent,
@@ -41,6 +42,7 @@ function RootComponent() {
   return (
     <AuthProvider>
       <Outlet />
+      <InstallBanner />
     </AuthProvider>
   );
 }
