@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import type { Appointment, DietPlan, ClientFeedback, ClientMeasurement } from "@/lib/types";
 import { PageShell } from "@/components/app-shell";
-import { SummaryCard, LoadingSpinner } from "@/components/ui-cards";
+import { SummaryCard, LoadingSpinner, NoClientProfile } from "@/components/ui-cards";
 import { Scale, Utensils, Calendar, MessageSquare, Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard")({
@@ -12,7 +12,7 @@ export const Route = createFileRoute("/dashboard")({
 });
 
 function DashboardPage() {
-  const { clientProfile, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { clientProfile, isAuthenticated, isLoading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
   const [activePlan, setActivePlan] = useState<DietPlan | null>(null);
   const [nextAppointment, setNextAppointment] = useState<Appointment | null>(null);
@@ -67,10 +67,11 @@ function DashboardPage() {
       setLatestMeasurement(measurementRes.data as ClientMeasurement | null);
       setLoading(false);
     };
-    fetchData();
+    fetchData().finally(() => setLoading(false));
   }, [clientProfile]);
 
   if (authLoading || !isAuthenticated) return <LoadingSpinner />;
+  if (!clientProfile) return <NoClientProfile onSignOut={() => signOut().then(() => navigate({ to: "/login" }))} />;
 
   const firstName = clientProfile?.name?.split(" ")[0] ?? "there";
 

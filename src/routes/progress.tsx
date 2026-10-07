@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/lib/supabase";
 import type { ClientMeasurement, ProgressEntry } from "@/lib/types";
 import { PageShell } from "@/components/app-shell";
-import { EmptyState, LoadingSpinner } from "@/components/ui-cards";
+import { EmptyState, LoadingSpinner, NoClientProfile } from "@/components/ui-cards";
 import { TrendingUp, Scale, Activity, Ruler, Percent, Plus, HeartPulse } from "lucide-react";
 import { MeasurementForm } from "@/components/measurement-form";
 import { HealthCheckinForm } from "@/components/health-checkin-form";
@@ -233,7 +233,7 @@ function MetricIcon({ k }: { k: MetricKey }): ReactNode {
 }
 
 function ProgressPage() {
-  const { clientProfile, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { clientProfile, isAuthenticated, isLoading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
   const [measurements, setMeasurements] = useState<ClientMeasurement[]>([]);
   const [progressEntries, setProgressEntries] = useState<ProgressEntry[]>([]);
@@ -269,10 +269,11 @@ function ProgressPage() {
 
   useEffect(() => {
     if (!clientProfile) return;
-    loadMeasurements();
+    loadMeasurements().finally(() => setLoading(false));
   }, [clientProfile, loadMeasurements]);
 
   if (authLoading || !isAuthenticated) return <LoadingSpinner />;
+  if (!clientProfile) return <NoClientProfile onSignOut={() => signOut().then(() => navigate({ to: "/login" }))} />;
 
   // latest measurement (last in asc order)
   const latest = measurements.length > 0 ? measurements[measurements.length - 1] : null;

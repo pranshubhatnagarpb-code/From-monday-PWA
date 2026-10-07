@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react
 import { supabase } from "@/lib/supabase";
 import type { BloodMarkerKey, BloodReportValues, ClientBloodReport } from "@/lib/types";
 import { PageShell } from "@/components/app-shell";
-import { EmptyState, LoadingSpinner } from "@/components/ui-cards";
+import { EmptyState, LoadingSpinner, NoClientProfile } from "@/components/ui-cards";
 import { FlaskConical, Plus, X, FileText, AlertCircle } from "lucide-react";
 import {
   LineChart,
@@ -48,7 +48,7 @@ function flattenValues(row: ClientBloodReport): BloodReportValues | null {
 }
 
 function BloodReportsPage() {
-  const { clientProfile, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { clientProfile, isAuthenticated, isLoading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
   const [reports, setReports] = useState<ClientBloodReport[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,7 +70,7 @@ function BloodReportsPage() {
   }, [clientProfile]);
 
   useEffect(() => {
-    if (clientProfile) load();
+    if (clientProfile) load().finally(() => setLoading(false));
   }, [clientProfile, load]);
 
   const trends = useMemo(() => {
@@ -94,6 +94,7 @@ function BloodReportsPage() {
   }, [reports]);
 
   if (authLoading || !isAuthenticated) return <LoadingSpinner />;
+  if (!clientProfile) return <NoClientProfile onSignOut={() => signOut().then(() => navigate({ to: "/login" }))} />;
 
   return (
     <PageShell title="Blood Reports">

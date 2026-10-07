@@ -49,3 +49,24 @@ export function LoadingSpinner() {
     </div>
   );
 }
+
+// Shown when a user is signed in but has no linked client record, so pages
+// don't sit on a spinner waiting for a profile that will never arrive.
+export function NoClientProfile({ onSignOut }: { onSignOut: () => void }) {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6 text-center">
+      <h2 className="font-display text-lg font-semibold text-foreground">Account not linked</h2>
+      <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+        You're signed in, but we couldn't find a client profile for this account. Please contact
+        your nutritionist to get it linked.
+      </p>
+      <button
+        type="button"
+        onClick={onSignOut}
+        className="mt-6 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+      >
+        Sign out
+      </button>
+    </div>
+  );
+}

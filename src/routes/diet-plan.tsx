@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import type { DietPlan, Client } from "@/lib/types";
 import { PageShell } from "@/components/app-shell";
-import { EmptyState, LoadingSpinner } from "@/components/ui-cards";
+import { EmptyState, LoadingSpinner, NoClientProfile } from "@/components/ui-cards";
 import { Utensils, CalendarDays, FileText, Download, ShoppingCart, ExternalLink } from "lucide-react";
 
 function calculateAge(dateOfBirth: string | null): number {
@@ -506,7 +506,7 @@ export const Route = createFileRoute("/diet-plan")({
 });
 
 function DietPlanPage() {
-  const { clientProfile, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { clientProfile, isAuthenticated, isLoading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
   const [activePlan, setActivePlan] = useState<DietPlan | null>(null);
   const [allPlans, setAllPlans] = useState<DietPlan[]>([]);
@@ -566,10 +566,11 @@ function DietPlanPage() {
 
       setLoading(false);
     };
-    load();
+    load().finally(() => setLoading(false));
   }, [clientProfile]);
 
   if (authLoading || !isAuthenticated) return <LoadingSpinner />;
+  if (!clientProfile) return <NoClientProfile onSignOut={() => signOut().then(() => navigate({ to: "/login" }))} />;
 
   return (
     <PageShell title="My Diet Plan">
