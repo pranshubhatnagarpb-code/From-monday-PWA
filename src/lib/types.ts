@@ -70,6 +70,7 @@ export interface ClientFeedback {
   id: string;
   client_id: string;
   feedback_text: string | null;
+  published_at?: string | null;
   created_at: string;
   updated_at: string;
 }

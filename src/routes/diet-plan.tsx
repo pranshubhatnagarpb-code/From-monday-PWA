@@ -4,8 +4,27 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import type { DietPlan, Client } from "@/lib/types";
 import { PageShell } from "@/components/app-shell";
-import { EmptyState, LoadingSpinner, NoClientProfile } from "@/components/ui-cards";
-import { Utensils, CalendarDays, FileText, Download, ShoppingCart, ExternalLink } from "lucide-react";
+import {
+  EmptyState,
+  LoadingSpinner,
+  NoClientProfile,
+  PageHero,
+  SectionCard,
+} from "@/components/ui-cards";
+import { formatPlanRange, planDayGroups, planProgress, todayGroupIndex } from "@/lib/plan";
+import {
+  Utensils,
+  CalendarDays,
+  FileText,
+  Download,
+  ShoppingCart,
+  ExternalLink,
+  ChevronDown,
+  Clock,
+  BookOpen,
+  ListChecks,
+  History,
+} from "lucide-react";
 
 function calculateAge(dateOfBirth: string | null): number {
   if (!dateOfBirth) return 0;
@@ -47,7 +66,11 @@ function escapePdfPlainText(str: string | null | undefined): string {
   return (str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-const normalizeMealName = (s: string) => (s || "").toLowerCase().replace(/[^a-z0-9]+/g, "").trim();
+const normalizeMealName = (s: string) =>
+  (s || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "")
+    .trim();
 
 // Mirrors extractMealCandidates() in AIDietPlanGenerator.tsx so the client
 // PDF matches the same recipes the PMS PDF would attach.
@@ -79,7 +102,12 @@ function extractMealCandidates(dayGroups: any[]): string[] {
   return result;
 }
 
-type MatchedRecipe = { Meal_name: string; Ingredients: string; Instructions: string; Remarks: string };
+type MatchedRecipe = {
+  Meal_name: string;
+  Ingredients: string;
+  Instructions: string;
+  Remarks: string;
+};
 
 // Mirrors fetchMatchedRecipes() in AIDietPlanGenerator.tsx. meal_recipes is
 // readable by the client portal role (see migration
@@ -196,7 +224,10 @@ async function openPlanAsPdf(
         )
         .join("");
 
-      const planDisplayName = String(ai.planName ?? plan.plan_name ?? "Diet Plan").replace(/food plan/gi, "Lifestyle Plan");
+      const planDisplayName = String(ai.planName ?? plan.plan_name ?? "Diet Plan").replace(
+        /food plan/gi,
+        "Lifestyle Plan",
+      );
 
       const matchedRecipes = await fetchMatchedRecipes(dayGroups);
       const recipesSection =
@@ -390,7 +421,10 @@ async function openPlanAsPdf(
   ${plan.instructions ? `<div class="serving-size">${plan.instructions.replace(/\n/g, "<br/>")}</div>` : ""}`;
     }
 
-    const title = String(ai?.planName ?? plan.plan_name ?? "Diet Plan").replace(/food plan/gi, "Lifestyle Plan");
+    const title = String(ai?.planName ?? plan.plan_name ?? "Diet Plan").replace(
+      /food plan/gi,
+      "Lifestyle Plan",
+    );
 
     return `<!DOCTYPE html>
 <html>
@@ -511,7 +545,12 @@ function DietPlanPage() {
   const [activePlan, setActivePlan] = useState<DietPlan | null>(null);
   const [allPlans, setAllPlans] = useState<DietPlan[]>([]);
   const [loading, setLoading] = useState(true);
-  const [affiliateProducts, setAffiliateProducts] = useState<{ product_name: string; link: string; product_name_normalized: string }[]>([]);
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [showIntro, setShowIntro] = useState(false);
+  const [showGrocery, setShowGrocery] = useState(false);
+  const [affiliateProducts, setAffiliateProducts] = useState<
+    { product_name: string; link: string; product_name_normalized: string }[]
+  >([]);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -532,18 +571,28 @@ function DietPlanPage() {
       setAllPlans(plans);
 
       // Active plan summary — prefer an "active" status plan, else the most recent.
-      const active = plans.find((p) => (p.status ?? "").toLowerCase() === "active") ?? plans[0] ?? null;
+      const active =
+        plans.find((p) => (p.status ?? "").toLowerCase() === "active") ?? plans[0] ?? null;
       setActivePlan(active);
 
       // Extract grocery list items from AI plans and match affiliate products
       const groceryItems = new Set<string>();
-      const normGrocery = (s: string) => (s || "").toLowerCase().replace(/[^a-z0-9]+/g, "").trim();
+      const normGrocery = (s: string) =>
+        (s || "")
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "")
+          .trim();
       for (const p of plans) {
         const ai = p.ai_plan_data as any;
         if (!ai?.weeklyGroceryList) continue;
-        for (const cat of (ai.weeklyGroceryList as any[])) {
-          for (const item of (cat.items as string[] ?? [])) {
-            const n = normGrocery(item.replace(/\(.*?\)/g, "").replace(/\d+\s*(g|ml|kg|tsp|tbsp|cup|pcs)\b/gi, "").trim());
+        for (const cat of ai.weeklyGroceryList as any[]) {
+          for (const item of (cat.items as string[]) ?? []) {
+            const n = normGrocery(
+              item
+                .replace(/\(.*?\)/g, "")
+                .replace(/\d+\s*(g|ml|kg|tsp|tbsp|cup|pcs)\b/gi, "")
+                .trim(),
+            );
             if (n.length >= 2) groceryItems.add(n);
           }
         }
@@ -556,9 +605,7 @@ function DietPlanPage() {
         if (allProducts) {
           const matched = (allProducts as any[]).filter((p) => {
             const pn = p.product_name_normalized as string;
-            return [...groceryItems].some(
-              (g) => g === pn || g.includes(pn) || pn.includes(g)
-            );
+            return [...groceryItems].some((g) => g === pn || g.includes(pn) || pn.includes(g));
           });
           setAffiliateProducts(matched);
         }
@@ -570,138 +617,214 @@ function DietPlanPage() {
   }, [clientProfile]);
 
   if (authLoading || !isAuthenticated) return <LoadingSpinner />;
-  if (!clientProfile) return <NoClientProfile onSignOut={() => signOut().then(() => navigate({ to: "/login" }))} />;
+  if (!clientProfile)
+    return <NoClientProfile onSignOut={() => signOut().then(() => navigate({ to: "/login" }))} />;
+
+  const groups = planDayGroups(activePlan);
+  const dayIdx = selectedDay ?? todayGroupIndex(groups);
+  const todayIdx = todayGroupIndex(groups);
+  const day = groups[dayIdx];
+  const progress = planProgress(activePlan);
+  const range = formatPlanRange(activePlan);
+  const ai = (activePlan?.ai_plan_data ?? {}) as Record<string, any>;
+  const hidden: string[] = ai.hiddenSections ?? [];
+  const intro = activePlan?.instructions || (ai.introMessage as string) || "";
+  const grocery = (
+    hidden.includes("weeklyGroceryList") ? [] : ((ai.weeklyGroceryList as any[]) ?? [])
+  ).filter((c) => c?.items?.length);
+  const pastPlans = allPlans.filter((p) => p.id !== activePlan?.id);
 
   return (
     <PageShell title="My Diet Plan">
       {loading ? (
         <LoadingSpinner />
+      ) : !activePlan ? (
+        <EmptyState
+          icon={<Utensils />}
+          title="No diet plan yet"
+          description="Your nutritionist will share your personalised plan here soon."
+        />
       ) : (
-        <div className="space-y-6">
-          {/* Active plan summary */}
-          {!activePlan ? (
-            <EmptyState
-              icon={<Utensils className="h-10 w-10" />}
-              title="No diet plan yet"
-              description="Your nutritionist hasn't created a plan yet."
-            />
-          ) : (
-            <div className="rounded-2xl border bg-card p-5">
-              <div className="mb-3 flex items-center gap-2">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
-                  <Utensils className="h-5 w-5 text-primary" />
+        <div className="space-y-4">
+          {/* Plan hero */}
+          <PageHero
+            eyebrow="Your diet plan"
+            title={activePlan.custom_title ?? activePlan.plan_name ?? "Diet Plan"}
+            subtitle={
+              range ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <CalendarDays className="h-3.5 w-3.5" /> {range}
+                </span>
+              ) : undefined
+            }
+          >
+            {progress && (
+              <div className="mt-4">
+                <div className="mb-1.5 flex items-center justify-between text-xs">
+                  <span className="font-medium text-white/90">{progress.label}</span>
+                  <span className="text-white/60">{progress.percent}%</span>
                 </div>
-                <div>
-                  <h2 className="font-display text-base font-bold text-foreground">
-                    {activePlan.custom_title ?? activePlan.plan_name ?? "Diet Plan"}
-                  </h2>
-                  <span className="inline-block rounded-full bg-success/15 px-2 py-0.5 text-xs font-medium text-success capitalize">
-                    {activePlan.status}
-                  </span>
+                <div className="h-1.5 overflow-hidden rounded-full bg-white/15">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-sky-200 to-white"
+                    style={{ width: `${Math.max(progress.percent, 3)}%` }}
+                  />
                 </div>
               </div>
+            )}
+            <button
+              onClick={() => openPlanAsPdf(activePlan, clientProfile, affiliateProducts)}
+              className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-xs font-semibold text-primary shadow-sm transition-transform active:scale-95"
+            >
+              <Download className="h-3.5 w-3.5" /> Download PDF
+            </button>
+          </PageHero>
 
-              {(activePlan.start_date || activePlan.end_date) && (
-                <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
-                  <CalendarDays className="h-4 w-4" />
-                  <span>
-                    {activePlan.start_date
-                      ? new Date(activePlan.start_date).toLocaleDateString("en-IN", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })
-                      : "—"}
-                    {" → "}
-                    {activePlan.end_date
-                      ? new Date(activePlan.end_date).toLocaleDateString("en-IN", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })
-                      : "Ongoing"}
-                  </span>
+          {/* Meals for the selected day */}
+          {groups.length > 0 && (
+            <SectionCard
+              icon={<Utensils />}
+              title={dayIdx === todayIdx ? "Today's meals" : "Meals"}
+              subtitle={day?.label}
+            >
+              {groups.length > 1 && (
+                <div className="-mx-5 mb-4 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {groups.map((g, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setSelectedDay(i)}
+                      className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+                        i === dayIdx
+                          ? "bg-primary text-primary-foreground shadow-sm shadow-primary/30"
+                          : "bg-muted text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {i === todayIdx ? "Today" : (g.label ?? `Day ${i + 1}`).replace(/,.*$/, "")}
+                    </button>
+                  ))}
                 </div>
               )}
 
-              {activePlan.instructions && (
-                <div className="rounded-xl bg-muted/50 p-4">
-                  <div className="mb-2 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    <FileText className="h-3.5 w-3.5" />
-                    Instructions
-                  </div>
-                  <div className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-                    {activePlan.instructions}
-                  </div>
-                </div>
-              )}
-
-              <button
-                onClick={() => openPlanAsPdf(activePlan, clientProfile, affiliateProducts)}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
-              >
-                <Download className="h-4 w-4" />
-                Download PDF
-              </button>
-            </div>
-          )}
-
-          {/* Past plans */}
-          {allPlans.length > 1 && (
-            <div>
-              <h3 className="mb-3 font-display text-sm font-semibold text-foreground">
-                All Plans
-              </h3>
-              <ul className="space-y-3">
-                {allPlans.filter((p) => p.id !== activePlan?.id).map((plan) => (
-                  <li key={plan.id} className="rounded-2xl border bg-card p-4">
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                        <FileText className="h-5 w-5 text-primary" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-foreground">
-                          {plan.custom_title ?? plan.plan_name ?? "Diet Plan"}
-                        </p>
-                        <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground capitalize">
-                          {plan.status}
+              <ol className="relative space-y-4 before:absolute before:bottom-2 before:left-[5px] before:top-2 before:w-px before:bg-border">
+                {(day?.meals ?? [])
+                  .filter((m) => m.foodPlan?.trim() || m.alternative?.trim())
+                  .map((meal, i) => (
+                    <li key={i} className="relative pl-6">
+                      <span className="absolute left-0 top-1.5 h-[11px] w-[11px] rounded-full border-2 border-primary bg-card" />
+                      <div className="flex flex-wrap items-baseline gap-x-2">
+                        <span className="text-sm font-semibold text-foreground">
+                          {meal.period || "Meal"}
                         </span>
-                        {(plan.start_date || plan.end_date) && (
-                          <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <CalendarDays className="h-3 w-3 shrink-0" />
-                            <span>
-                              {plan.start_date
-                                ? new Date(plan.start_date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
-                                : "—"}
-                              {" → "}
-                              {plan.end_date
-                                ? new Date(plan.end_date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
-                                : "Ongoing"}
-                            </span>
-                          </div>
+                        {meal.time && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
+                            <Clock className="h-3 w-3" /> {meal.time}
+                          </span>
                         )}
                       </div>
-                    </div>
-                    <button
-                      onClick={() => openPlanAsPdf(plan, clientProfile, affiliateProducts)}
-                      className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border bg-background px-4 py-2 text-xs font-medium text-foreground transition-colors hover:bg-muted"
-                    >
-                      <Download className="h-4 w-4" />
-                      Download PDF
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
+                      {meal.foodPlan && (
+                        <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+                          {meal.foodPlan}
+                        </p>
+                      )}
+                      {meal.alternative && (
+                        <p className="mt-1.5 rounded-xl bg-muted/60 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
+                          <span className="font-semibold text-foreground/70">Or: </span>
+                          {meal.alternative}
+                        </p>
+                      )}
+                      {meal.notes && (
+                        <p className="mt-1 text-xs italic text-muted-foreground">{meal.notes}</p>
+                      )}
+                    </li>
+                  ))}
+              </ol>
+            </SectionCard>
           )}
 
-          {/* Affiliate product links matched from grocery list */}
+          {/* Plan introduction */}
+          {intro && (
+            <SectionCard
+              icon={<BookOpen />}
+              iconClassName="bg-sky-100 text-sky-700"
+              title="About your plan"
+            >
+              <p
+                className={`whitespace-pre-wrap text-sm leading-relaxed text-foreground ${showIntro ? "" : "line-clamp-4"}`}
+              >
+                {intro}
+              </p>
+              {intro.length > 220 && (
+                <button
+                  onClick={() => setShowIntro((v) => !v)}
+                  className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary"
+                >
+                  {showIntro ? "Show less" : "Read more"}
+                  <ChevronDown
+                    className={`h-3.5 w-3.5 transition-transform ${showIntro ? "rotate-180" : ""}`}
+                  />
+                </button>
+              )}
+            </SectionCard>
+          )}
+
+          {/* Weekly grocery list */}
+          {grocery.length > 0 && (
+            <SectionCard
+              icon={<ListChecks />}
+              iconClassName="bg-emerald-100 text-emerald-700"
+              title="Weekly grocery list"
+              subtitle={`${grocery.reduce((n, c) => n + c.items.length, 0)} items`}
+              action={
+                <button
+                  onClick={() => setShowGrocery((v) => !v)}
+                  className="rounded-full p-1.5 text-muted-foreground hover:bg-muted"
+                  aria-label={showGrocery ? "Hide grocery list" : "Show grocery list"}
+                >
+                  <ChevronDown
+                    className={`h-4 w-4 transition-transform ${showGrocery ? "rotate-180" : ""}`}
+                  />
+                </button>
+              }
+            >
+              {showGrocery ? (
+                <div className="space-y-3">
+                  {grocery.map((cat, i) => (
+                    <div key={i}>
+                      <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                        {cat.category}
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {(cat.items as string[]).map((item, j) => (
+                          <span
+                            key={j}
+                            className="rounded-full border bg-background px-2.5 py-1 text-xs text-foreground"
+                          >
+                            {item}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowGrocery(true)}
+                  className="text-xs font-semibold text-primary"
+                >
+                  Show list
+                </button>
+              )}
+            </SectionCard>
+          )}
+
+          {/* Recommended products */}
           {affiliateProducts.length > 0 && (
-            <div>
-              <h3 className="mb-3 font-display text-sm font-semibold text-foreground flex items-center gap-2">
-                <ShoppingCart className="h-4 w-4 text-primary" />
-                Shop Recommended Products
-              </h3>
+            <SectionCard
+              icon={<ShoppingCart />}
+              iconClassName="bg-amber-100 text-amber-700"
+              title="Recommended products"
+              subtitle="Picked to match your grocery list"
+            >
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {affiliateProducts.map((p) => (
                   <a
@@ -709,14 +832,49 @@ function DietPlanPage() {
                     href={p.link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-between gap-3 rounded-2xl border bg-card px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                    className="flex items-center justify-between gap-3 rounded-2xl border bg-background px-4 py-3 text-sm font-medium text-foreground transition-colors hover:border-primary/40 hover:bg-primary/5"
                   >
                     <span className="truncate">{p.product_name}</span>
-                    <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <ExternalLink className="h-4 w-4 shrink-0 text-primary" />
                   </a>
                 ))}
               </div>
-            </div>
+            </SectionCard>
+          )}
+
+          {/* Earlier plans */}
+          {pastPlans.length > 0 && (
+            <SectionCard
+              icon={<History />}
+              iconClassName="bg-muted text-muted-foreground"
+              title="Earlier plans"
+            >
+              <ul className="divide-y divide-border">
+                {pastPlans.map((plan) => (
+                  <li key={plan.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      <FileText className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="line-clamp-2 text-sm font-medium text-foreground">
+                        {plan.custom_title ?? plan.plan_name ?? "Diet Plan"}
+                      </p>
+                      {formatPlanRange(plan) && (
+                        <p className="text-xs text-muted-foreground">{formatPlanRange(plan)}</p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => openPlanAsPdf(plan, clientProfile, affiliateProducts)}
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-primary transition-colors hover:bg-primary/5"
+                      aria-label="Download PDF"
+                      title="Download PDF"
+                    >
+                      <Download className="h-4 w-4" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </SectionCard>
           )}
         </div>
       )}

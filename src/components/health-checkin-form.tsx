@@ -7,7 +7,13 @@ import type { Client, ProgressEntry } from "@/lib/types";
 // Tiny reusable widgets (no external deps beyond what the PWA already uses)
 // ---------------------------------------------------------------------------
 
-function RatingButtons({ value, onChange }: { value: number | null; onChange: (n: number) => void }) {
+function RatingButtons({
+  value,
+  onChange,
+}: {
+  value: number | null;
+  onChange: (n: number) => void;
+}) {
   return (
     <div className="flex gap-2">
       {[1, 2, 3, 4, 5].map((n) => (
@@ -88,7 +94,15 @@ function MultiChips({
   );
 }
 
-function FieldRow({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+function FieldRow({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="space-y-2">
       <div>
@@ -163,21 +177,43 @@ type FormState = Omit<ProgressEntry, "id" | "client_id" | "created_at" | "update
 function emptyForm(today: string): FormState {
   return {
     entry_date: today,
-    weight_kg: null, height_cm: null,
-    sleep_quality_rating: null, digestion_rating: null, energy_rating: null,
-    fatigue_rating: null, skin_rating: null, hair_rating: null,
-    acidity_rating: null, bloating_rating: null, constipation_rating: null,
-    sleep_hours: null, water_intake: null, activity_level: null,
-    screen_time_hrs: null, stress_rating: null,
-    blood_parameters: [], inflammation_concerns: null,
-    meals_per_day: null, packaged_food_frequency: null,
+    weight_kg: null,
+    height_cm: null,
+    sleep_quality_rating: null,
+    digestion_rating: null,
+    energy_rating: null,
+    fatigue_rating: null,
+    skin_rating: null,
+    hair_rating: null,
+    acidity_rating: null,
+    bloating_rating: null,
+    constipation_rating: null,
+    sleep_hours: null,
+    water_intake: null,
+    activity_level: null,
+    screen_time_hrs: null,
+    stress_rating: null,
+    blood_parameters: [],
+    inflammation_concerns: null,
+    meals_per_day: null,
+    packaged_food_frequency: null,
     medications: [],
-    periods_status: null, period_flow: [], period_pain_severity: null, pms_symptoms: [],
-    libido_rating: null, testosterone_status: null,
-    stamina_rating: null, attention_rating: null, memory_rating: null,
-    focus_rating: null, appetite: null,
-    breastfed: null, breastfeeding_duration_months: null, formula_fed: null,
-    solids_start_age_months: null, feeding_difficulties: null,
+    periods_status: null,
+    period_flow: [],
+    period_pain_severity: null,
+    pms_symptoms: [],
+    libido_rating: null,
+    testosterone_status: null,
+    stamina_rating: null,
+    attention_rating: null,
+    memory_rating: null,
+    focus_rating: null,
+    appetite: null,
+    breastfed: null,
+    breastfeeding_duration_months: null,
+    formula_fed: null,
+    solids_start_age_months: null,
+    feeding_difficulties: null,
     notes: null,
   };
 }
@@ -241,20 +277,46 @@ export function HealthCheckinForm({ clientProfile, onClose, onSaved }: Props) {
             />
           </FieldRow>
           <FieldRow label="Weight">
-            <NumInput value={form.weight_kg} onChange={(v) => set("weight_kg", v)} min={isInfant ? 1 : 2} max={isInfant ? 40 : 300} step="0.1" suffix="kg" />
+            <NumInput
+              value={form.weight_kg}
+              onChange={(v) => set("weight_kg", v)}
+              min={isInfant ? 1 : 2}
+              max={isInfant ? 40 : 300}
+              step="0.1"
+              suffix="kg"
+            />
           </FieldRow>
           {(isInfant || isChild) && (
             <FieldRow label="Height">
-              <NumInput value={form.height_cm} onChange={(v) => set("height_cm", v)} min={30} max={200} step="0.5" suffix="cm" />
+              <NumInput
+                value={form.height_cm}
+                onChange={(v) => set("height_cm", v)}
+                min={30}
+                max={200}
+                step="0.5"
+                suffix="cm"
+              />
             </FieldRow>
           )}
           <FieldRow label={isInfant ? "Sleep per day" : "Sleep per night"}>
-            <NumInput value={form.sleep_hours} onChange={(v) => set("sleep_hours", v)} min={isInfant ? 8 : 3} max={isInfant ? 20 : 14} step="0.5" suffix="hrs" />
+            <NumInput
+              value={form.sleep_hours}
+              onChange={(v) => set("sleep_hours", v)}
+              min={isInfant ? 8 : 3}
+              max={isInfant ? 20 : 14}
+              step="0.5"
+              suffix="hrs"
+            />
           </FieldRow>
           {!isInfant && (
             <FieldRow label="Water intake">
               <SegmentedPicker
-                options={[{ value: "<1L", label: "<1 L" }, { value: "1-2L", label: "1–2 L" }, { value: "2-3L", label: "2–3 L" }, { value: "3L+", label: "3 L+" }]}
+                options={[
+                  { value: "<1L", label: "<1 L" },
+                  { value: "1-2L", label: "1–2 L" },
+                  { value: "2-3L", label: "2–3 L" },
+                  { value: "3L+", label: "3 L+" },
+                ]}
                 value={form.water_intake}
                 onChange={(v) => set("water_intake", v)}
               />
@@ -263,7 +325,13 @@ export function HealthCheckinForm({ clientProfile, onClose, onSaved }: Props) {
           {!isInfant && (
             <FieldRow label="Activity level">
               <SegmentedPicker
-                options={[{ value: "sedentary", label: "Sedentary" }, { value: "light", label: "Light" }, { value: "moderate", label: "Moderate" }, { value: "active", label: "Active" }, { value: "very_active", label: "Very active" }]}
+                options={[
+                  { value: "sedentary", label: "Sedentary" },
+                  { value: "light", label: "Light" },
+                  { value: "moderate", label: "Moderate" },
+                  { value: "active", label: "Active" },
+                  { value: "very_active", label: "Very active" },
+                ]}
                 value={form.activity_level}
                 onChange={(v) => set("activity_level", v)}
               />
@@ -271,7 +339,14 @@ export function HealthCheckinForm({ clientProfile, onClose, onSaved }: Props) {
           )}
           {!isInfant && (
             <FieldRow label="Screen time">
-              <NumInput value={form.screen_time_hrs} onChange={(v) => set("screen_time_hrs", v)} min={0} max={24} step="0.5" suffix="hrs/day" />
+              <NumInput
+                value={form.screen_time_hrs}
+                onChange={(v) => set("screen_time_hrs", v)}
+                min={0}
+                max={24}
+                step="0.5"
+                suffix="hrs/day"
+              />
             </FieldRow>
           )}
         </div>
@@ -282,25 +357,26 @@ export function HealthCheckinForm({ clientProfile, onClose, onSaved }: Props) {
       title: "How are you feeling?",
       content: (
         <div className="space-y-5">
-          {((isInfant
-            ? [
-                ["sleep_quality_rating", "Sleep quality", "5 = sleeping very well"],
-                ["digestion_rating", "Digestion", "5 = excellent digestion"],
-                ["skin_rating", "Skin health", "5 = clear, healthy skin"],
-                ["constipation_rating", "Constipation severity", "5 = very severe constipation"],
-              ]
-            : [
-                ["sleep_quality_rating", "Sleep quality",    "5 = sleeping very well"],
-                ["digestion_rating",     "Digestion",        "5 = excellent digestion"],
-                ["energy_rating",        "Daily energy",     "5 = high energy all day"],
-                ["fatigue_rating",       "Fatigue level",    "1 = always tired · 5 = rarely tired"],
-                ["skin_rating",          "Skin health",      "5 = clear, healthy skin"],
-                ["hair_rating",          "Hair health",      "5 = strong, healthy hair"],
-                ["acidity_rating",        "Acidity severity",     "5 = very severe acidity"],
-                ["bloating_rating",       "Bloating severity",    "5 = very severe bloating"],
-                ["constipation_rating",   "Constipation severity","5 = very severe constipation"],
-              ]
-          ) as [keyof FormState, string, string][]).map(([k, label, hint]) => (
+          {(
+            (isInfant
+              ? [
+                  ["sleep_quality_rating", "Sleep quality", "5 = sleeping very well"],
+                  ["digestion_rating", "Digestion", "5 = excellent digestion"],
+                  ["skin_rating", "Skin health", "5 = clear, healthy skin"],
+                  ["constipation_rating", "Constipation severity", "5 = very severe constipation"],
+                ]
+              : [
+                  ["sleep_quality_rating", "Sleep quality", "5 = sleeping very well"],
+                  ["digestion_rating", "Digestion", "5 = excellent digestion"],
+                  ["energy_rating", "Daily energy", "5 = high energy all day"],
+                  ["fatigue_rating", "Fatigue level", "1 = always tired · 5 = rarely tired"],
+                  ["skin_rating", "Skin health", "5 = clear, healthy skin"],
+                  ["hair_rating", "Hair health", "5 = strong, healthy hair"],
+                  ["acidity_rating", "Acidity severity", "5 = very severe acidity"],
+                  ["bloating_rating", "Bloating severity", "5 = very severe bloating"],
+                  ["constipation_rating", "Constipation severity", "5 = very severe constipation"],
+                ]) as [keyof FormState, string, string][]
+          ).map(([k, label, hint]) => (
             <FieldRow key={k} label={label} hint={hint}>
               <RatingButtons value={form[k] as number | null} onChange={(n) => set(k, n)} />
             </FieldRow>
@@ -317,22 +393,53 @@ export function HealthCheckinForm({ clientProfile, onClose, onSaved }: Props) {
             content: (
               <div className="space-y-6">
                 <FieldRow label="Stress level" hint="1 = very low · 5 = very high">
-                  <RatingButtons value={form.stress_rating} onChange={(n) => set("stress_rating", n)} />
+                  <RatingButtons
+                    value={form.stress_rating}
+                    onChange={(n) => set("stress_rating", n)}
+                  />
                 </FieldRow>
                 <FieldRow label="Meals per day">
-                  <NumInput value={form.meals_per_day} onChange={(v) => set("meals_per_day", v ? Math.round(v) : null)} min={1} max={8} />
+                  <NumInput
+                    value={form.meals_per_day}
+                    onChange={(v) => set("meals_per_day", v ? Math.round(v) : null)}
+                    min={1}
+                    max={8}
+                  />
                 </FieldRow>
                 <FieldRow label="Blood markers (select any concerns)">
                   <MultiChips
-                    options={["Haemoglobin", "HbA1c", "Fasting glucose", "Cholesterol", "LDL", "HDL", "Triglycerides", "TSH", "Vitamin D", "Vitamin B12", "Iron/Ferritin", "Uric acid", "CRP"]}
+                    options={[
+                      "Haemoglobin",
+                      "HbA1c",
+                      "Fasting glucose",
+                      "Cholesterol",
+                      "LDL",
+                      "HDL",
+                      "Triglycerides",
+                      "TSH",
+                      "Vitamin D",
+                      "Vitamin B12",
+                      "Iron/Ferritin",
+                      "Uric acid",
+                      "CRP",
+                    ]}
                     value={form.blood_parameters ?? []}
                     onChange={(v) => set("blood_parameters", v)}
                   />
                 </FieldRow>
                 <FieldRow label="Inflammation concerns?">
                   <SegmentedPicker
-                    options={[{ value: "yes", label: "Yes" }, { value: "no", label: "No" }]}
-                    value={form.inflammation_concerns === null ? null : form.inflammation_concerns ? "yes" : "no"}
+                    options={[
+                      { value: "yes", label: "Yes" },
+                      { value: "no", label: "No" },
+                    ]}
+                    value={
+                      form.inflammation_concerns === null
+                        ? null
+                        : form.inflammation_concerns
+                          ? "yes"
+                          : "no"
+                    }
                     onChange={(v) => set("inflammation_concerns", v === "yes")}
                   />
                 </FieldRow>
@@ -342,32 +449,61 @@ export function HealthCheckinForm({ clientProfile, onClose, onSaved }: Props) {
         ]),
     // Step 3: Branch-specific
     {
-      title: isInfant ? "Feeding" : branch === "female" ? "Women's Health" : branch === "male" ? "Men's Health" : "Child's Health",
+      title: isInfant
+        ? "Feeding"
+        : branch === "female"
+          ? "Women's Health"
+          : branch === "male"
+            ? "Men's Health"
+            : "Child's Health",
       content: isInfant ? (
         <div className="space-y-5">
           <FieldRow label="Breastfed?">
             <SegmentedPicker
-              options={[{ value: "yes", label: "Yes" }, { value: "no", label: "No" }]}
+              options={[
+                { value: "yes", label: "Yes" },
+                { value: "no", label: "No" },
+              ]}
               value={form.breastfed === null ? null : form.breastfed ? "yes" : "no"}
               onChange={(v) => set("breastfed", v === "yes")}
             />
           </FieldRow>
           {form.breastfed && (
             <FieldRow label="Breastfeeding duration">
-              <NumInput value={form.breastfeeding_duration_months} onChange={(v) => set("breastfeeding_duration_months", v)} min={0} max={60} step="1" suffix="months" />
+              <NumInput
+                value={form.breastfeeding_duration_months}
+                onChange={(v) => set("breastfeeding_duration_months", v)}
+                min={0}
+                max={60}
+                step="1"
+                suffix="months"
+              />
             </FieldRow>
           )}
           <FieldRow label="Formula fed?">
             <SegmentedPicker
-              options={[{ value: "yes", label: "Yes" }, { value: "no", label: "No" }]}
+              options={[
+                { value: "yes", label: "Yes" },
+                { value: "no", label: "No" },
+              ]}
               value={form.formula_fed === null ? null : form.formula_fed ? "yes" : "no"}
               onChange={(v) => set("formula_fed", v === "yes")}
             />
           </FieldRow>
           <FieldRow label="Age started solids">
-            <NumInput value={form.solids_start_age_months} onChange={(v) => set("solids_start_age_months", v)} min={0} max={24} step="1" suffix="months" />
+            <NumInput
+              value={form.solids_start_age_months}
+              onChange={(v) => set("solids_start_age_months", v)}
+              min={0}
+              max={24}
+              step="1"
+              suffix="months"
+            />
           </FieldRow>
-          <FieldRow label="Feeding difficulties" hint="Any difficulties with breast/bottle/solid feeding">
+          <FieldRow
+            label="Feeding difficulties"
+            hint="Any difficulties with breast/bottle/solid feeding"
+          >
             <textarea
               rows={3}
               value={form.feeding_difficulties ?? ""}
@@ -380,7 +516,12 @@ export function HealthCheckinForm({ clientProfile, onClose, onSaved }: Props) {
         <div className="space-y-5">
           <FieldRow label="Periods status">
             <SegmentedPicker
-              options={[{ value: "regular", label: "Regular" }, { value: "irregular", label: "Irregular" }, { value: "absent", label: "Absent" }, { value: "menopausal", label: "Menopausal" }]}
+              options={[
+                { value: "regular", label: "Regular" },
+                { value: "irregular", label: "Irregular" },
+                { value: "absent", label: "Absent" },
+                { value: "menopausal", label: "Menopausal" },
+              ]}
               value={form.periods_status}
               onChange={(v) => set("periods_status", v)}
             />
@@ -393,11 +534,22 @@ export function HealthCheckinForm({ clientProfile, onClose, onSaved }: Props) {
             />
           </FieldRow>
           <FieldRow label="Pain severity" hint="1 = none · 5 = severe">
-            <RatingButtons value={form.period_pain_severity} onChange={(n) => set("period_pain_severity", n)} />
+            <RatingButtons
+              value={form.period_pain_severity}
+              onChange={(n) => set("period_pain_severity", n)}
+            />
           </FieldRow>
           <FieldRow label="PMS symptoms">
             <MultiChips
-              options={["mood swings", "cramps", "bloating", "breast tenderness", "headaches", "cravings", "fatigue"]}
+              options={[
+                "mood swings",
+                "cramps",
+                "bloating",
+                "breast tenderness",
+                "headaches",
+                "cravings",
+                "fatigue",
+              ]}
               value={form.pms_symptoms ?? []}
               onChange={(v) => set("pms_symptoms", v)}
             />
@@ -410,7 +562,13 @@ export function HealthCheckinForm({ clientProfile, onClose, onSaved }: Props) {
           </FieldRow>
           <FieldRow label="Testosterone status">
             <SegmentedPicker
-              options={[{ value: "not_tested", label: "Not tested" }, { value: "normal", label: "Normal" }, { value: "low", label: "Low" }, { value: "high", label: "High" }, { value: "unsure", label: "Unsure" }]}
+              options={[
+                { value: "not_tested", label: "Not tested" },
+                { value: "normal", label: "Normal" },
+                { value: "low", label: "Low" },
+                { value: "high", label: "High" },
+                { value: "unsure", label: "Unsure" },
+              ]}
               value={form.testosterone_status}
               onChange={(v) => set("testosterone_status", v)}
             />
@@ -418,14 +576,27 @@ export function HealthCheckinForm({ clientProfile, onClose, onSaved }: Props) {
         </div>
       ) : (
         <div className="space-y-5">
-          {([["stamina_rating", "Stamina"], ["attention_rating", "Attention span"], ["memory_rating", "Memory"], ["focus_rating", "Focus"]] as [keyof FormState, string][]).map(([k, label]) => (
+          {(
+            [
+              ["stamina_rating", "Stamina"],
+              ["attention_rating", "Attention span"],
+              ["memory_rating", "Memory"],
+              ["focus_rating", "Focus"],
+            ] as [keyof FormState, string][]
+          ).map(([k, label]) => (
             <FieldRow key={k} label={label} hint="1 = very poor · 5 = excellent">
               <RatingButtons value={form[k] as number | null} onChange={(n) => set(k, n)} />
             </FieldRow>
           ))}
           <FieldRow label="Appetite">
             <SegmentedPicker
-              options={[{ value: "poor", label: "Poor" }, { value: "variable", label: "Variable" }, { value: "good", label: "Good" }, { value: "very_good", label: "Very good" }, { value: "excessive", label: "Excessive" }]}
+              options={[
+                { value: "poor", label: "Poor" },
+                { value: "variable", label: "Variable" },
+                { value: "good", label: "Good" },
+                { value: "very_good", label: "Very good" },
+                { value: "excessive", label: "Excessive" },
+              ]}
               value={form.appetite}
               onChange={(v) => set("appetite", v)}
             />
@@ -438,7 +609,9 @@ export function HealthCheckinForm({ clientProfile, onClose, onSaved }: Props) {
       title: "Anything else?",
       content: (
         <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">Optional — share anything else you'd like your nutritionist to know.</p>
+          <p className="text-sm text-muted-foreground">
+            Optional — share anything else you'd like your nutritionist to know.
+          </p>
           <textarea
             rows={5}
             maxLength={500}
@@ -458,25 +631,32 @@ export function HealthCheckinForm({ clientProfile, onClose, onSaved }: Props) {
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-background">
       {/* Header */}
-      <div className="flex items-center justify-between border-b px-4 py-3">
+      <div className="flex items-center justify-between px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))]">
         <div>
-          <p className="text-xs text-muted-foreground">Step {step + 1} of {steps.length}</p>
-          <h2 className="text-base font-semibold text-foreground">{current.title}</h2>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-primary">
+            Step {step + 1} of {steps.length}
+          </p>
+          <h2 className="font-display text-lg font-bold text-foreground">{current.title}</h2>
         </div>
-        <button onClick={onClose} className="rounded-xl p-2 text-muted-foreground hover:bg-muted">
+        <button
+          onClick={onClose}
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground hover:text-foreground"
+          aria-label="Close"
+        >
           <X className="h-5 w-5" />
         </button>
       </div>
 
       {/* Progress bar */}
-      <div className="h-1 bg-muted">
-        <div className="h-1 bg-primary transition-all" style={{ width: `${((step + 1) / steps.length) * 100}%` }} />
+      <div className="mx-4 h-1.5 overflow-hidden rounded-full bg-muted">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-primary to-sky-400 transition-all"
+          style={{ width: `${((step + 1) / steps.length) * 100}%` }}
+        />
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-4 py-5">
-        {current.content}
-      </div>
+      <div className="flex-1 overflow-y-auto px-4 py-5">{current.content}</div>
 
       {/* Footer */}
       {error && (
@@ -484,12 +664,12 @@ export function HealthCheckinForm({ clientProfile, onClose, onSaved }: Props) {
           {error}
         </div>
       )}
-      <div className="flex items-center justify-between border-t bg-background px-4 py-3">
+      <div className="flex items-center justify-between border-t bg-background px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
         <button
           type="button"
           disabled={step === 0}
           onClick={() => setStep((s) => s - 1)}
-          className="flex items-center gap-1 rounded-xl px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted disabled:opacity-40"
+          className="flex items-center gap-1 rounded-full px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted disabled:opacity-40"
         >
           <ChevronLeft className="h-4 w-4" /> Back
         </button>
@@ -499,7 +679,7 @@ export function HealthCheckinForm({ clientProfile, onClose, onSaved }: Props) {
             type="button"
             onClick={handleSubmit}
             disabled={saving}
-            className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            className="flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-md shadow-primary/25 hover:bg-primary/90 disabled:opacity-50"
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
             Submit Check-in
@@ -508,7 +688,7 @@ export function HealthCheckinForm({ clientProfile, onClose, onSaved }: Props) {
           <button
             type="button"
             onClick={() => setStep((s) => s + 1)}
-            className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+            className="flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-md shadow-primary/25 hover:bg-primary/90"
           >
             Continue <ChevronRight className="h-4 w-4" />
           </button>

@@ -45,8 +45,7 @@ export function MeasurementForm({ clientId, heightCm, onClose, onSaved }: Props)
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const setVal = (k: string, v: string) =>
-    setValues((p) => ({ ...p, [k]: v }));
+  const setVal = (k: string, v: string) => setValues((p) => ({ ...p, [k]: v }));
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -98,12 +97,11 @@ export function MeasurementForm({ clientId, heightCm, onClose, onSaved }: Props)
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center">
-      <div className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-background p-5 sm:rounded-2xl">
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-foreground/30 backdrop-blur-sm animate-in fade-in sm:items-center">
+      <div className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-background p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-2xl animate-in slide-in-from-bottom-8 sm:rounded-3xl sm:pb-5">
+        <div className="mx-auto -mt-2 mb-3 h-1.5 w-10 rounded-full bg-border sm:hidden" />
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-display text-lg font-bold text-foreground">
-            Add Measurement
-          </h2>
+          <h2 className="font-display text-lg font-bold text-foreground">Add Measurement</h2>
           <button
             type="button"
             onClick={onClose}
@@ -183,14 +181,14 @@ export function MeasurementForm({ clientId, heightCm, onClose, onSaved }: Props)
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-xl border bg-background px-4 py-3 text-sm font-medium text-foreground hover:bg-muted"
+              className="flex-1 rounded-full border bg-background px-4 py-3 text-sm font-medium text-foreground hover:bg-muted"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-md shadow-primary/25 hover:bg-primary/90 disabled:opacity-50"
             >
               <Plus className="h-4 w-4" />
               {saving ? "Saving…" : "Save"}

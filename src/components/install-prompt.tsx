@@ -62,8 +62,9 @@ function InstallBody({ showAndroidFallback }: { showAndroidFallback: boolean }) 
     return (
       <div className="space-y-3">
         <p className="text-sm text-muted-foreground">
-          To install, open this page in {platform === "ios" ? "Safari" : "Chrome"}: tap the <Key>⋯</Key> menu and
-          choose <Key>Open in browser</Key>, or copy the link and paste it there.
+          To install, open this page in {platform === "ios" ? "Safari" : "Chrome"}: tap the{" "}
+          <Key>⋯</Key> menu and choose <Key>Open in browser</Key>, or copy the link and paste it
+          there.
         </p>
         <CopyLinkButton />
       </div>
@@ -82,11 +83,17 @@ function InstallBody({ showAndroidFallback }: { showAndroidFallback: boolean }) 
     return (
       <ol className="space-y-2.5">
         <Step n={1}>
-          Tap <Key><Share className="h-3.5 w-3.5" /> Share</Key>
+          Tap{" "}
+          <Key>
+            <Share className="h-3.5 w-3.5" /> Share
+          </Key>
           {isIosSafari ? "at the bottom of Safari" : "in the address bar"}
         </Step>
         <Step n={2}>
-          Scroll down and tap <Key><SquarePlus className="h-3.5 w-3.5" /> Add to Home Screen</Key>
+          Scroll down and tap{" "}
+          <Key>
+            <SquarePlus className="h-3.5 w-3.5" /> Add to Home Screen
+          </Key>
         </Step>
         <Step n={3}>
           Tap <Key>Add</Key> in the top-right corner
@@ -99,7 +106,10 @@ function InstallBody({ showAndroidFallback }: { showAndroidFallback: boolean }) 
     return (
       <ol className="space-y-2.5">
         <Step n={1}>
-          Tap the browser menu <Key><EllipsisVertical className="h-3.5 w-3.5" /></Key>
+          Tap the browser menu{" "}
+          <Key>
+            <EllipsisVertical className="h-3.5 w-3.5" />
+          </Key>
         </Step>
         <Step n={2}>
           Tap <Key>Install app</Key> or <Key>Add to Home screen</Key>
@@ -121,7 +131,11 @@ function useAndroidFallback() {
 }
 
 const AppIcon = () => (
-  <img src="/icons/icon-192.png" alt="" className="h-11 w-11 shrink-0 rounded-xl border shadow-sm" />
+  <img
+    src="/icons/icon-192.png"
+    alt=""
+    className="h-11 w-11 shrink-0 rounded-xl border shadow-sm"
+  />
 );
 
 /** Floating banner shown to visitors using the portal in a browser tab. */
@@ -131,7 +145,10 @@ export function InstallBanner() {
   const [dismissed, setDismissed] = useState(recentlyDismissed);
 
   const hasSomethingToShow =
-    isInAppBrowser || canPrompt || platform === "ios" || (platform === "android" && showAndroidFallback);
+    isInAppBrowser ||
+    canPrompt ||
+    platform === "ios" ||
+    (platform === "android" && showAndroidFallback);
   if (isInstalled || dismissed || !hasSomethingToShow) return null;
 
   const dismiss = () => {
@@ -177,12 +194,14 @@ export function InstallAppCard() {
   if (isInstalled || (platform === "desktop" && !canPrompt && !isInAppBrowser)) return null;
 
   return (
-    <div className="rounded-2xl border bg-card p-4">
+    <div className="rounded-3xl border bg-card p-5 shadow-sm">
       <div className="mb-3 flex items-center gap-3">
         <AppIcon />
         <div>
           <p className="font-semibold text-foreground">Get the app</p>
-          <p className="text-xs text-muted-foreground">Install From Monday on your phone's home screen.</p>
+          <p className="text-xs text-muted-foreground">
+            Install From Monday on your phone's home screen.
+          </p>
         </div>
       </div>
       <InstallBody showAndroidFallback />

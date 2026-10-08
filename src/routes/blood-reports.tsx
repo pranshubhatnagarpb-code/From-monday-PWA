@@ -4,11 +4,26 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react
 import { supabase } from "@/lib/supabase";
 import type { BloodMarkerKey, BloodReportValues, ClientBloodReport } from "@/lib/types";
 import { PageShell } from "@/components/app-shell";
-import { EmptyState, LoadingSpinner, NoClientProfile } from "@/components/ui-cards";
-import { FlaskConical, Plus, X, FileText, AlertCircle } from "lucide-react";
 import {
-  LineChart,
-  Line,
+  EmptyState,
+  LoadingSpinner,
+  NoClientProfile,
+  PageHero,
+  HeroStat,
+  SectionCard,
+} from "@/components/ui-cards";
+import {
+  FlaskConical,
+  Plus,
+  X,
+  FileText,
+  Info,
+  LineChart as LineChartIcon,
+  History,
+} from "lucide-react";
+import {
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -94,151 +109,180 @@ function BloodReportsPage() {
   }, [reports]);
 
   if (authLoading || !isAuthenticated) return <LoadingSpinner />;
-  if (!clientProfile) return <NoClientProfile onSignOut={() => signOut().then(() => navigate({ to: "/login" }))} />;
+  if (!clientProfile)
+    return <NoClientProfile onSignOut={() => signOut().then(() => navigate({ to: "/login" }))} />;
+
+  const latestReport = reports.length > 0 ? reports[reports.length - 1] : null;
 
   return (
     <PageShell title="Blood Reports">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">
-          Log your blood test results and track key markers over time.
-        </p>
-        {clientProfile && (
-          <button
-            type="button"
-            onClick={() => setShowForm(true)}
-            className="flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
-          >
-            <Plus className="h-4 w-4" />
-            Add
-          </button>
-        )}
-      </div>
-
-      <div className="mb-5 flex items-start gap-2 rounded-xl border bg-muted/50 px-3 py-2.5 text-xs text-muted-foreground">
-        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-        <p>Your nutritionist may also upload lab reports directly to your file.</p>
-      </div>
-
-      {loading ? (
-        <LoadingSpinner />
-      ) : reports.length === 0 ? (
-        <EmptyState
-          icon={<FlaskConical className="h-10 w-10" />}
-          title="No blood reports yet"
-          description='Tap "Add" to log a blood test, or your nutritionist will add one for you.'
-        />
-      ) : (
-        <div className="space-y-6">
-          {trends.length > 0 && (
-            <div className="space-y-4">
-              <h3 className="font-display text-sm font-semibold text-foreground">Trends</h3>
-              {trends.map((t) => (
-                <div key={t.key} className="rounded-2xl border bg-card p-4">
-                  <div className="mb-3 flex items-center gap-2">
-                    <FlaskConical className="h-4 w-4 text-muted-foreground" />
-                    <h4 className="text-sm font-semibold text-foreground">
-                      {t.label} ({t.unit})
-                    </h4>
-                  </div>
-                  <ResponsiveContainer width="100%" height={180}>
-                    <LineChart data={t.series}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                      <XAxis
-                        dataKey="date"
-                        tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <YAxis
-                        tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-                        axisLine={false}
-                        tickLine={false}
-                        domain={["auto", "auto"]}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          background: "var(--card)",
-                          border: "1px solid var(--border)",
-                          borderRadius: "0.75rem",
-                          fontSize: 12,
-                        }}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="value"
-                        stroke="var(--primary)"
-                        strokeWidth={2.5}
-                        dot={{ fill: "var(--primary)", r: 3 }}
-                        activeDot={{ r: 5 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              ))}
+      <div className="space-y-4">
+        <PageHero
+          eyebrow="Lab reports"
+          title="Your blood markers"
+          subtitle="Log test results and see how key markers change over time."
+          icon={<FlaskConical />}
+        >
+          {reports.length > 0 && (
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <HeroStat label="Reports" value={reports.length} />
+              <HeroStat
+                label="Latest"
+                value={
+                  latestReport?.report_date
+                    ? new Date(latestReport.report_date).toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "short",
+                      })
+                    : "—"
+                }
+                hint={latestReport?.lab_name ?? undefined}
+              />
             </div>
           )}
+          {clientProfile && (
+            <button
+              type="button"
+              onClick={() => setShowForm(true)}
+              className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-xs font-semibold text-primary shadow-sm transition-transform active:scale-95"
+            >
+              <Plus className="h-3.5 w-3.5" /> Add blood report
+            </button>
+          )}
+        </PageHero>
 
-          <div>
-            <h3 className="mb-3 font-display text-sm font-semibold text-foreground">
-              Report History
-            </h3>
-            <div className="space-y-2">
-              {[...reports].reverse().map((r) => {
-                const values = flattenValues(r);
-                const filled = TRACKED_KEYS.map((t) => ({
-                  ...t,
-                  value: values?.[t.key],
-                })).filter((x): x is typeof x & { value: number } => typeof x.value === "number");
-                return (
-                  <div key={r.id} className="rounded-2xl border bg-card p-4">
-                    <div className="mb-2 flex items-center gap-2">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
-                        <FileText className="h-4 w-4 text-primary" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-foreground">
-                          {r.report_date
-                            ? new Date(r.report_date).toLocaleDateString("en-IN", {
-                                day: "numeric",
-                                month: "long",
-                                year: "numeric",
-                              })
-                            : "Undated report"}
-                        </p>
-                        <p className="text-[11px] text-muted-foreground">
-                          {r.lab_name ? r.lab_name : `Logged ${new Date(r.created_at).toLocaleDateString("en-IN")}`}
-                        </p>
-                      </div>
-                    </div>
-                    {filled.length > 0 && (
-                      <div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-3">
-                        {filled.map((m) => (
-                          <div key={m.key}>
-                            <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                              {m.label}
-                            </p>
-                            <p className="text-sm font-semibold text-foreground">
-                              {m.value}
-                              <span className="ml-0.5 text-xs font-normal text-muted-foreground">
-                                {m.unit}
-                              </span>
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {r.notes && (
-                      <p className="mt-2 border-t pt-2 text-xs text-muted-foreground">
-                        {r.notes}
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+        <div className="flex items-start gap-2.5 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-xs text-sky-900">
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-sky-600" />
+          <p>Your nutritionist may also upload lab reports directly to your file.</p>
         </div>
-      )}
+
+        {loading ? (
+          <LoadingSpinner />
+        ) : reports.length === 0 ? (
+          <EmptyState
+            icon={<FlaskConical />}
+            title="No blood reports yet"
+            description="Tap “Add blood report” above to log a test, or your nutritionist will add one for you."
+          />
+        ) : (
+          <>
+            {trends.map((t) => (
+              <SectionCard
+                key={t.key}
+                icon={<LineChartIcon />}
+                iconClassName="bg-violet-100 text-violet-700"
+                title={t.label}
+                subtitle={`in ${t.unit}`}
+              >
+                <ResponsiveContainer width="100%" height={180}>
+                  <AreaChart data={t.series} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id={`blood-${t.key}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.25} />
+                        <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                      axisLine={false}
+                      tickLine={false}
+                      domain={["auto", "auto"]}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        background: "var(--card)",
+                        border: "1px solid var(--border)",
+                        borderRadius: "0.75rem",
+                        fontSize: 12,
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="value"
+                      stroke="var(--primary)"
+                      strokeWidth={2.5}
+                      fill={`url(#blood-${t.key})`}
+                      dot={{
+                        fill: "var(--card)",
+                        stroke: "var(--primary)",
+                        strokeWidth: 2,
+                        r: 3.5,
+                      }}
+                      activeDot={{ r: 5 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </SectionCard>
+            ))}
+
+            <SectionCard
+              icon={<History />}
+              iconClassName="bg-muted text-muted-foreground"
+              title="Report history"
+            >
+              <div className="divide-y divide-border">
+                {[...reports].reverse().map((r) => {
+                  const values = flattenValues(r);
+                  const filled = TRACKED_KEYS.map((t) => ({
+                    ...t,
+                    value: values?.[t.key],
+                  })).filter((x): x is typeof x & { value: number } => typeof x.value === "number");
+                  return (
+                    <div key={r.id} className="py-4 first:pt-0 last:pb-0">
+                      <div className="mb-3 flex items-center gap-3">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                          <FileText className="h-4 w-4" />
+                        </span>
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-foreground">
+                            {r.report_date
+                              ? new Date(r.report_date).toLocaleDateString("en-IN", {
+                                  day: "numeric",
+                                  month: "long",
+                                  year: "numeric",
+                                })
+                              : "Undated report"}
+                          </p>
+                          <p className="truncate text-[11px] text-muted-foreground">
+                            {r.lab_name
+                              ? r.lab_name
+                              : `Logged ${new Date(r.created_at).toLocaleDateString("en-IN")}`}
+                          </p>
+                        </div>
+                      </div>
+                      {filled.length > 0 && (
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                          {filled.map((m) => (
+                            <div key={m.key} className="rounded-xl bg-muted/50 px-3 py-2">
+                              <p className="truncate text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                                {m.label}
+                              </p>
+                              <p className="text-sm font-semibold text-foreground">
+                                {m.value}
+                                <span className="ml-0.5 text-xs font-normal text-muted-foreground">
+                                  {m.unit}
+                                </span>
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {r.notes && <p className="mt-2 text-xs text-muted-foreground">{r.notes}</p>}
+                    </div>
+                  );
+                })}
+              </div>
+            </SectionCard>
+          </>
+        )}
+      </div>
 
       {showForm && clientProfile && (
         <BloodReportForm
@@ -270,8 +314,7 @@ function BloodReportForm({ clientId, onClose, onSaved }: FormProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const setVal = (k: BloodMarkerKey, v: string) =>
-    setValues((p) => ({ ...p, [k]: v }));
+  const setVal = (k: BloodMarkerKey, v: string) => setValues((p) => ({ ...p, [k]: v }));
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -325,12 +368,11 @@ function BloodReportForm({ clientId, onClose, onSaved }: FormProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center">
-      <div className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-background p-5 sm:rounded-2xl">
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-foreground/30 backdrop-blur-sm animate-in fade-in sm:items-center">
+      <div className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-background p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-2xl animate-in slide-in-from-bottom-8 sm:rounded-3xl sm:pb-5">
+        <div className="mx-auto -mt-2 mb-3 h-1.5 w-10 rounded-full bg-border sm:hidden" />
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-display text-lg font-bold text-foreground">
-            Add Blood Report
-          </h2>
+          <h2 className="font-display text-lg font-bold text-foreground">Add Blood Report</h2>
           <button
             type="button"
             onClick={onClose}
@@ -414,14 +456,14 @@ function BloodReportForm({ clientId, onClose, onSaved }: FormProps) {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-xl border bg-background px-4 py-3 text-sm font-medium text-foreground hover:bg-muted"
+              className="flex-1 rounded-full border bg-background px-4 py-3 text-sm font-medium text-foreground hover:bg-muted"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-md shadow-primary/25 hover:bg-primary/90 disabled:opacity-50"
             >
               <Plus className="h-4 w-4" />
               {saving ? "Saving…" : "Save"}

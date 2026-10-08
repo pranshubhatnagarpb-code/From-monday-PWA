@@ -4,13 +4,32 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/lib/supabase";
 import type { ClientMeasurement, ProgressEntry } from "@/lib/types";
 import { PageShell } from "@/components/app-shell";
-import { EmptyState, LoadingSpinner, NoClientProfile } from "@/components/ui-cards";
-import { TrendingUp, Scale, Activity, Ruler, Percent, Plus, HeartPulse } from "lucide-react";
+import {
+  EmptyState,
+  LoadingSpinner,
+  NoClientProfile,
+  PageHero,
+  HeroStat,
+  SectionCard,
+} from "@/components/ui-cards";
+import {
+  TrendingUp,
+  TrendingDown,
+  Scale,
+  Activity,
+  Ruler,
+  Percent,
+  Plus,
+  HeartPulse,
+  ChevronDown,
+  History,
+  LineChart as LineChartIcon,
+} from "lucide-react";
 import { MeasurementForm } from "@/components/measurement-form";
 import { HealthCheckinForm } from "@/components/health-checkin-form";
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   BarChart,
   Bar,
   Cell,
@@ -69,7 +88,16 @@ const CHART_METRICS: MetricKey[] = ["weight", "bmi", "waist"];
 
 // Lower is better for these metrics
 const LOWER_IS_BETTER: MetricKey[] = [
-  "weight", "bmi", "body_fat_percent", "waist", "hip", "chest", "thigh", "arm", "neck", "calf",
+  "weight",
+  "bmi",
+  "body_fat_percent",
+  "waist",
+  "hip",
+  "chest",
+  "thigh",
+  "arm",
+  "neck",
+  "calf",
 ];
 
 interface MetricTrend {
@@ -103,15 +131,11 @@ function OverallAnalysisCard({ measurements }: { measurements: ClientMeasurement
 
   if (trends.length === 0) {
     return (
-      <div className="rounded-2xl border bg-card p-4">
-        <div className="mb-2 flex items-center gap-2">
-          <TrendingUp className="h-4 w-4 text-primary" />
-          <h4 className="text-sm font-semibold text-foreground">Overall Analysis</h4>
-        </div>
-        <p className="text-xs text-muted-foreground">
+      <SectionCard icon={<TrendingUp />} title="Overall analysis">
+        <p className="text-sm text-muted-foreground">
           Log at least 2 measurements to see your trend analysis.
         </p>
-      </div>
+      </SectionCard>
     );
   }
 
@@ -121,7 +145,7 @@ function OverallAnalysisCard({ measurements }: { measurements: ClientMeasurement
   const spanDays = Math.round(
     (new Date(measurements[measurements.length - 1].measurement_date).getTime() -
       new Date(measurements[0].measurement_date).getTime()) /
-      (1000 * 60 * 60 * 24)
+      (1000 * 60 * 60 * 24),
   );
 
   let headline = "";
@@ -141,19 +165,14 @@ function OverallAnalysisCard({ measurements }: { measurements: ClientMeasurement
   }));
 
   return (
-    <div className="rounded-2xl border bg-card p-4">
-      <div className="mb-1 flex items-center gap-2">
-        <TrendingUp className="h-4 w-4 text-primary" />
-        <h4 className="text-sm font-semibold text-foreground">Overall Analysis</h4>
-        {spanDays > 0 && (
-          <span className="ml-auto text-xs text-muted-foreground">
-            Over {spanDays} day{spanDays !== 1 ? "s" : ""}
-          </span>
-        )}
-      </div>
-
-      <p className="mb-3 text-xs text-muted-foreground">{headline}</p>
-
+    <SectionCard
+      icon={<TrendingUp />}
+      iconClassName="bg-emerald-100 text-emerald-700"
+      title="Overall analysis"
+      subtitle={
+        spanDays > 0 ? `${headline} · over ${spanDays} day${spanDays !== 1 ? "s" : ""}` : headline
+      }
+    >
       {/* Bar chart: % change per metric */}
       <ResponsiveContainer width="100%" height={Math.max(120, chartData.length * 32)}>
         <BarChart
@@ -185,7 +204,7 @@ function OverallAnalysisCard({ measurements }: { measurements: ClientMeasurement
               borderRadius: "0.75rem",
               fontSize: 12,
             }}
-            formatter={(v: number) => [`${v > 0 ? "+" : ""}${v}%`, "Change"]}
+            formatter={(v) => [`${Number(v) > 0 ? "+" : ""}${v}%`, "Change"]}
           />
           <Bar dataKey="pct" radius={[0, 4, 4, 0]} maxBarSize={18}>
             {chartData.map((entry, i) => (
@@ -199,17 +218,17 @@ function OverallAnalysisCard({ measurements }: { measurements: ClientMeasurement
         </BarChart>
       </ResponsiveContainer>
 
-      <div className="mt-3 flex gap-4 text-xs text-muted-foreground">
-        <span className="flex items-center gap-1">
-          <span className="inline-block h-2 w-2 rounded-full bg-success" />
+      <div className="mt-3 flex gap-2 text-xs">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-success/10 px-2.5 py-1 font-medium text-success">
+          <span className="inline-block h-1.5 w-1.5 rounded-full bg-success" />
           {improved.length} improving
         </span>
-        <span className="flex items-center gap-1">
-          <span className="inline-block h-2 w-2 rounded-full bg-destructive" />
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-destructive/10 px-2.5 py-1 font-medium text-destructive">
+          <span className="inline-block h-1.5 w-1.5 rounded-full bg-destructive" />
           {worsened.length} to work on
         </span>
       </div>
-    </div>
+    </SectionCard>
   );
 }
 const HISTORY_METRICS: MetricKey[] = [
@@ -273,161 +292,99 @@ function ProgressPage() {
   }, [clientProfile, loadMeasurements]);
 
   if (authLoading || !isAuthenticated) return <LoadingSpinner />;
-  if (!clientProfile) return <NoClientProfile onSignOut={() => signOut().then(() => navigate({ to: "/login" }))} />;
+  if (!clientProfile)
+    return <NoClientProfile onSignOut={() => signOut().then(() => navigate({ to: "/login" }))} />;
 
   // latest measurement (last in asc order)
   const latest = measurements.length > 0 ? measurements[measurements.length - 1] : null;
   const previous = measurements.length > 1 ? measurements[measurements.length - 2] : null;
 
   // which metrics actually have any data?
-  const hasData = (k: MetricKey) =>
-    measurements.some((m) => m[k] !== null && m[k] !== undefined);
+  const hasData = (k: MetricKey) => measurements.some((m) => m[k] !== null && m[k] !== undefined);
 
   const summaryAvailable = SUMMARY_METRICS.filter(hasData);
   const chartsAvailable = CHART_METRICS.filter(hasData);
 
+  const isImprovement = (k: MetricKey, d: number) => (LOWER_IS_BETTER.includes(k) ? d < 0 : d > 0);
+  const firstWeight = measurements.find((m) => typeof m.weight === "number")?.weight ?? null;
+  const totalWeightChange =
+    typeof latest?.weight === "number" && typeof firstWeight === "number"
+      ? latest.weight - firstWeight
+      : null;
+
   return (
     <PageShell title="My Progress">
-      {/* Health Check-in section */}
-      <div className="mb-6">
-        <div className="mb-3 flex items-center justify-between">
-          <div>
-            <h3 className="font-display text-sm font-semibold text-foreground">Health Check-ins</h3>
-            <p className="text-xs text-muted-foreground">Log how you're feeling periodically</p>
-          </div>
-          {clientProfile && (
-            <button
-              type="button"
-              onClick={() => setShowCheckinForm(true)}
-              className="flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
-            >
-              <HeartPulse className="h-4 w-4" />
-              Log Check-in
-            </button>
+      <div className="space-y-4">
+        {/* Hero */}
+        <PageHero
+          eyebrow="Your progress"
+          title="Track your journey"
+          subtitle={
+            latest
+              ? `Last measured ${new Date(latest.measurement_date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`
+              : "Log check-ins and measurements to see your progress"
+          }
+          icon={<TrendingUp />}
+        >
+          {(latest?.weight != null || latest?.bmi != null) && (
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              <HeroStat
+                label="Weight"
+                value={latest?.weight ?? "—"}
+                hint={latest?.weight != null ? "kg" : undefined}
+              />
+              <HeroStat
+                label="Change"
+                value={
+                  totalWeightChange != null
+                    ? `${totalWeightChange > 0 ? "+" : ""}${totalWeightChange.toFixed(1)}`
+                    : "—"
+                }
+                hint={totalWeightChange != null ? "kg overall" : undefined}
+              />
+              <HeroStat label="BMI" value={latest?.bmi ?? "—"} />
+            </div>
           )}
-        </div>
+          {clientProfile && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setShowCheckinForm(true)}
+                className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-xs font-semibold text-primary shadow-sm transition-transform active:scale-95"
+              >
+                <HeartPulse className="h-3.5 w-3.5" /> Log check-in
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowForm(true)}
+                className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-4 py-2 text-xs font-semibold text-white ring-1 ring-white/25 transition-transform active:scale-95"
+              >
+                <Plus className="h-3.5 w-3.5" /> Add measurement
+              </button>
+            </div>
+          )}
+        </PageHero>
 
-        {progressEntries.length === 0 ? (
-          <div className="rounded-2xl border bg-card px-4 py-6 text-center text-sm text-muted-foreground">
-            No check-ins yet — tap "Log Check-in" to record your first one.
-          </div>
+        {loading ? (
+          <LoadingSpinner />
         ) : (
-          <div className="space-y-2">
-            {progressEntries.map((entry) => {
-              const isOpen = expandedEntry === entry.id;
-              const ratings = [
-                ["Sleep", entry.sleep_quality_rating], ["Digestion", entry.digestion_rating],
-                ["Energy", entry.energy_rating], ["Skin", entry.skin_rating],
-                ["Hair", entry.hair_rating],
-              ].filter(([, v]) => v != null) as [string, number][];
-              return (
-                <div key={entry.id} className="rounded-2xl border bg-card">
-                  <button
-                    onClick={() => setExpandedEntry(isOpen ? null : entry.id)}
-                    className="flex w-full items-center justify-between px-4 py-3 text-left"
-                  >
-                    <div className="flex flex-wrap items-center gap-3">
-                      <span className="text-sm font-semibold text-foreground">
-                        {new Date(entry.entry_date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-                      </span>
-                      {entry.weight_kg && <span className="text-xs text-muted-foreground">{entry.weight_kg} kg</span>}
-                      {ratings.slice(0, 3).map(([label, val]) => (
-                        <span key={label} className="text-xs text-muted-foreground">{label} {val}/5</span>
-                      ))}
-                    </div>
-                    <span className="text-xs text-muted-foreground">{isOpen ? "▲" : "▼"}</span>
-                  </button>
-
-                  {isOpen && (
-                    <div className="border-t px-4 pb-4 pt-3 space-y-2">
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        {entry.weight_kg != null && <div><span className="text-muted-foreground">Weight </span><span className="font-medium">{entry.weight_kg} kg</span></div>}
-                        {entry.sleep_hours != null && <div><span className="text-muted-foreground">Sleep </span><span className="font-medium">{entry.sleep_hours} hrs</span></div>}
-                        {entry.water_intake && <div><span className="text-muted-foreground">Water </span><span className="font-medium">{entry.water_intake}</span></div>}
-                        {entry.activity_level && <div><span className="text-muted-foreground">Activity </span><span className="font-medium capitalize">{entry.activity_level.replace("_", " ")}</span></div>}
-                        {entry.screen_time_hrs != null && <div><span className="text-muted-foreground">Screen </span><span className="font-medium">{entry.screen_time_hrs} hrs</span></div>}
-                        {entry.stress_rating != null && <div><span className="text-muted-foreground">Stress </span><span className="font-medium">{entry.stress_rating}/5</span></div>}
-                      </div>
-                      {ratings.length > 0 && (
-                        <div className="grid grid-cols-2 gap-2 border-t pt-2 text-xs">
-                          {([
-                            ["Sleep quality", entry.sleep_quality_rating], ["Digestion", entry.digestion_rating],
-                            ["Energy", entry.energy_rating], ["Fatigue", entry.fatigue_rating],
-                            ["Skin", entry.skin_rating], ["Hair", entry.hair_rating],
-                            ["Acidity", entry.acidity_rating], ["Bloating", entry.bloating_rating],
-                          ] as [string, number | null][]).filter(([, v]) => v != null).map(([label, val]) => (
-                            <div key={label}><span className="text-muted-foreground">{label} </span><span className="font-medium">{val}/5</span></div>
-                          ))}
-                        </div>
-                      )}
-                      {entry.blood_parameters?.length ? (
-                        <p className="border-t pt-2 text-xs text-muted-foreground">Blood markers: {entry.blood_parameters.join(", ")}</p>
-                      ) : null}
-                      {entry.notes && <p className="border-t pt-2 text-xs text-muted-foreground">{entry.notes}</p>}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">
-          Track your measurements over time.
-        </p>
-        {clientProfile && (
-          <button
-            type="button"
-            onClick={() => setShowForm(true)}
-            className="flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
-          >
-            <Plus className="h-4 w-4" />
-            Add
-          </button>
-        )}
-      </div>
-
-      {loading ? (
-        <LoadingSpinner />
-      ) : measurements.length === 0 ? (
-        <EmptyState
-          icon={<TrendingUp className="h-10 w-10" />}
-          title="No measurements yet"
-          description='Tap "Add" to log your first measurement, or wait for your nutritionist to record one.'
-        />
-      ) : (
-        <div className="space-y-6">
-          {/* Latest summary */}
-          {latest && summaryAvailable.length > 0 && (
-            <div>
-              <div className="mb-2 flex items-baseline justify-between">
-                <h3 className="font-display text-sm font-semibold text-foreground">
-                  Latest Summary
-                </h3>
-                <span className="text-xs text-muted-foreground">
-                  {new Date(latest.measurement_date).toLocaleDateString("en-IN", {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  })}
-                </span>
-              </div>
+          <>
+            {/* Latest summary */}
+            {latest && summaryAvailable.length > 0 && (
               <div className="grid grid-cols-2 gap-3">
                 {summaryAvailable.map((k) => {
                   const val = latest[k];
                   const prev = previous?.[k];
                   const delta =
                     typeof val === "number" && typeof prev === "number" ? val - prev : null;
+                  const good = delta !== null && delta !== 0 && isImprovement(k, delta);
                   return (
-                    <div
-                      key={k}
-                      className="rounded-2xl border bg-card p-4"
-                    >
-                      <div className="mb-2 flex items-center gap-2 text-muted-foreground">
-                        <MetricIcon k={k} />
-                        <span className="text-xs font-medium uppercase tracking-wide">
+                    <div key={k} className="rounded-3xl border bg-card p-4 shadow-sm">
+                      <div className="mb-3 flex items-center gap-2">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                          <MetricIcon k={k} />
+                        </span>
+                        <span className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
                           {METRIC_LABEL[k]}
                         </span>
                       </div>
@@ -440,143 +397,305 @@ function ProgressPage() {
                         )}
                       </p>
                       {delta !== null && (
-                        <p
-                          className={`mt-0.5 text-xs ${
-                            delta < 0
-                              ? "text-success"
-                              : delta > 0
-                                ? "text-destructive"
-                                : "text-muted-foreground"
+                        <span
+                          className={`mt-1.5 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                            delta === 0
+                              ? "bg-muted text-muted-foreground"
+                              : good
+                                ? "bg-success/10 text-success"
+                                : "bg-destructive/10 text-destructive"
                           }`}
                         >
+                          {delta < 0 ? (
+                            <TrendingDown className="h-3 w-3" />
+                          ) : (
+                            <TrendingUp className="h-3 w-3" />
+                          )}
                           {delta > 0 ? "+" : ""}
-                          {delta.toFixed(1)} {METRIC_UNIT[k]} vs last
-                        </p>
+                          {delta.toFixed(1)} {METRIC_UNIT[k]}
+                        </span>
                       )}
                     </div>
                   );
                 })}
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Trends */}
-          <div className="space-y-4">
-            <h3 className="font-display text-sm font-semibold text-foreground">Trends</h3>
-            <OverallAnalysisCard measurements={measurements} />
-            {chartsAvailable.map((k) => {
-              const data = measurements
-                .filter((m) => m[k] !== null && m[k] !== undefined)
-                .map((m) => ({
-                  date: new Date(m.measurement_date).toLocaleDateString("en-IN", {
-                    day: "numeric",
-                    month: "short",
-                  }),
-                  value: m[k],
-                }));
-              if (data.length === 0) return null;
-              return (
-                <div key={k} className="rounded-2xl border bg-card p-4">
-                  <div className="mb-3 flex items-center gap-2">
-                    <MetricIcon k={k} />
-                    <h4 className="text-sm font-semibold text-foreground">
-                      {METRIC_LABEL[k]} {METRIC_UNIT[k] && `(${METRIC_UNIT[k]})`}
-                    </h4>
-                  </div>
-                  <ResponsiveContainer width="100%" height={180}>
-                    <LineChart data={data}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                      <XAxis
-                        dataKey="date"
-                        tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <YAxis
-                        tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-                        axisLine={false}
-                        tickLine={false}
-                        domain={["auto", "auto"]}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          background: "var(--card)",
-                          border: "1px solid var(--border)",
-                          borderRadius: "0.75rem",
-                          fontSize: 12,
-                        }}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="value"
-                        stroke="var(--primary)"
-                        strokeWidth={2.5}
-                        dot={{ fill: "var(--primary)", r: 3 }}
-                        activeDot={{ r: 5 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* History */}
-          <div>
-            <h3 className="mb-3 font-display text-sm font-semibold text-foreground">
-              Measurement History
-            </h3>
-            <div className="space-y-2">
-              {[...measurements].reverse().map((m) => {
-                const visibleMetrics = HISTORY_METRICS.filter(
-                  (k) => m[k] !== null && m[k] !== undefined
-                );
-                const note = m.notes ?? null;
-                return (
-                  <div
-                    key={m.id}
-                    className="rounded-2xl border bg-card p-4"
-                  >
-                    <div className="mb-2 flex items-center justify-between">
-                      <p className="text-sm font-semibold text-foreground">
-                        {new Date(m.measurement_date).toLocaleDateString("en-IN", {
-                          day: "numeric",
-                          month: "long",
-                          year: "numeric",
-                        })}
-                      </p>
-                    </div>
-                    {visibleMetrics.length > 0 && (
-                      <div className="grid grid-cols-3 gap-x-3 gap-y-2">
-                        {visibleMetrics.map((k) => (
-                          <div key={k}>
-                            <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                              {METRIC_LABEL[k]}
-                            </p>
+            {/* Health check-ins */}
+            <SectionCard
+              icon={<HeartPulse />}
+              iconClassName="bg-rose-100 text-rose-600"
+              title="Health check-ins"
+              subtitle="How you've been feeling"
+            >
+              {progressEntries.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No check-ins yet. Tap “Log check-in” above to record your first one.
+                </p>
+              ) : (
+                <div className="divide-y divide-border">
+                  {progressEntries.map((entry) => {
+                    const isOpen = expandedEntry === entry.id;
+                    const ratings = [
+                      ["Sleep", entry.sleep_quality_rating],
+                      ["Digestion", entry.digestion_rating],
+                      ["Energy", entry.energy_rating],
+                      ["Skin", entry.skin_rating],
+                      ["Hair", entry.hair_rating],
+                    ].filter(([, v]) => v != null) as [string, number][];
+                    return (
+                      <div key={entry.id} className="py-3 first:pt-0 last:pb-0">
+                        <button
+                          onClick={() => setExpandedEntry(isOpen ? null : entry.id)}
+                          className="flex w-full items-start justify-between gap-3 text-left"
+                        >
+                          <div className="min-w-0">
                             <p className="text-sm font-semibold text-foreground">
-                              {m[k]}
-                              {METRIC_UNIT[k] && (
-                                <span className="ml-0.5 text-xs font-normal text-muted-foreground">
-                                  {METRIC_UNIT[k]}
+                              {new Date(entry.entry_date).toLocaleDateString("en-IN", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              })}
+                              {entry.weight_kg && (
+                                <span className="ml-2 font-normal text-muted-foreground">
+                                  {entry.weight_kg} kg
                                 </span>
                               )}
                             </p>
+                            {ratings.length > 0 && (
+                              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                                {ratings.slice(0, 3).map(([label, val]) => (
+                                  <span
+                                    key={label}
+                                    className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground"
+                                  >
+                                    {label} {val}/5
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                           </div>
-                        ))}
+                          <ChevronDown
+                            className={`mt-0.5 h-4 w-4 shrink-0 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`}
+                          />
+                        </button>
+
+                        {isOpen && (
+                          <div className="mt-3 space-y-2 rounded-2xl bg-muted/50 p-3">
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              {entry.weight_kg != null && (
+                                <div>
+                                  <span className="text-muted-foreground">Weight </span>
+                                  <span className="font-medium">{entry.weight_kg} kg</span>
+                                </div>
+                              )}
+                              {entry.sleep_hours != null && (
+                                <div>
+                                  <span className="text-muted-foreground">Sleep </span>
+                                  <span className="font-medium">{entry.sleep_hours} hrs</span>
+                                </div>
+                              )}
+                              {entry.water_intake && (
+                                <div>
+                                  <span className="text-muted-foreground">Water </span>
+                                  <span className="font-medium">{entry.water_intake}</span>
+                                </div>
+                              )}
+                              {entry.activity_level && (
+                                <div>
+                                  <span className="text-muted-foreground">Activity </span>
+                                  <span className="font-medium capitalize">
+                                    {entry.activity_level.replace("_", " ")}
+                                  </span>
+                                </div>
+                              )}
+                              {entry.screen_time_hrs != null && (
+                                <div>
+                                  <span className="text-muted-foreground">Screen </span>
+                                  <span className="font-medium">{entry.screen_time_hrs} hrs</span>
+                                </div>
+                              )}
+                              {entry.stress_rating != null && (
+                                <div>
+                                  <span className="text-muted-foreground">Stress </span>
+                                  <span className="font-medium">{entry.stress_rating}/5</span>
+                                </div>
+                              )}
+                            </div>
+                            {ratings.length > 0 && (
+                              <div className="grid grid-cols-2 gap-2 border-t border-border/70 pt-2 text-xs">
+                                {(
+                                  [
+                                    ["Sleep quality", entry.sleep_quality_rating],
+                                    ["Digestion", entry.digestion_rating],
+                                    ["Energy", entry.energy_rating],
+                                    ["Fatigue", entry.fatigue_rating],
+                                    ["Skin", entry.skin_rating],
+                                    ["Hair", entry.hair_rating],
+                                    ["Acidity", entry.acidity_rating],
+                                    ["Bloating", entry.bloating_rating],
+                                  ] as [string, number | null][]
+                                )
+                                  .filter(([, v]) => v != null)
+                                  .map(([label, val]) => (
+                                    <div key={label}>
+                                      <span className="text-muted-foreground">{label} </span>
+                                      <span className="font-medium">{val}/5</span>
+                                    </div>
+                                  ))}
+                              </div>
+                            )}
+                            {entry.blood_parameters?.length ? (
+                              <p className="border-t border-border/70 pt-2 text-xs text-muted-foreground">
+                                Blood markers: {entry.blood_parameters.join(", ")}
+                              </p>
+                            ) : null}
+                            {entry.notes && (
+                              <p className="border-t border-border/70 pt-2 text-xs text-muted-foreground">
+                                {entry.notes}
+                              </p>
+                            )}
+                          </div>
+                        )}
                       </div>
-                    )}
-                    {note && (
-                      <p className="mt-2 border-t pt-2 text-xs text-muted-foreground">
-                        {note}
-                      </p>
-                    )}
+                    );
+                  })}
+                </div>
+              )}
+            </SectionCard>
+
+            {measurements.length === 0 ? (
+              <EmptyState
+                icon={<TrendingUp />}
+                title="No measurements yet"
+                description="Tap “Add measurement” above to log your first one, or wait for your nutritionist to record it."
+              />
+            ) : (
+              <>
+                {/* Trends */}
+                <OverallAnalysisCard measurements={measurements} />
+                {chartsAvailable.map((k) => {
+                  const data = measurements
+                    .filter((m) => m[k] !== null && m[k] !== undefined)
+                    .map((m) => ({
+                      date: new Date(m.measurement_date).toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "short",
+                      }),
+                      value: m[k],
+                    }));
+                  if (data.length === 0) return null;
+                  return (
+                    <SectionCard
+                      key={k}
+                      icon={<LineChartIcon />}
+                      title={`${METRIC_LABEL[k]} trend`}
+                      subtitle={METRIC_UNIT[k] ? `in ${METRIC_UNIT[k]}` : undefined}
+                    >
+                      <ResponsiveContainer width="100%" height={180}>
+                        <AreaChart data={data} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
+                          <defs>
+                            <linearGradient id={`fill-${k}`} x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.25} />
+                              <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid
+                            strokeDasharray="3 3"
+                            stroke="var(--border)"
+                            vertical={false}
+                          />
+                          <XAxis
+                            dataKey="date"
+                            tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                            axisLine={false}
+                            tickLine={false}
+                          />
+                          <YAxis
+                            tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                            axisLine={false}
+                            tickLine={false}
+                            domain={["auto", "auto"]}
+                          />
+                          <Tooltip
+                            contentStyle={{
+                              background: "var(--card)",
+                              border: "1px solid var(--border)",
+                              borderRadius: "0.75rem",
+                              fontSize: 12,
+                            }}
+                          />
+                          <Area
+                            type="monotone"
+                            dataKey="value"
+                            stroke="var(--primary)"
+                            strokeWidth={2.5}
+                            fill={`url(#fill-${k})`}
+                            dot={{
+                              fill: "var(--card)",
+                              stroke: "var(--primary)",
+                              strokeWidth: 2,
+                              r: 3.5,
+                            }}
+                            activeDot={{ r: 5 }}
+                          />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </SectionCard>
+                  );
+                })}
+
+                {/* History */}
+                <SectionCard
+                  icon={<History />}
+                  iconClassName="bg-muted text-muted-foreground"
+                  title="Measurement history"
+                >
+                  <div className="divide-y divide-border">
+                    {[...measurements].reverse().map((m) => {
+                      const visibleMetrics = HISTORY_METRICS.filter(
+                        (k) => m[k] !== null && m[k] !== undefined,
+                      );
+                      const note = m.notes ?? null;
+                      return (
+                        <div key={m.id} className="py-3 first:pt-0 last:pb-0">
+                          <p className="mb-2 text-sm font-semibold text-foreground">
+                            {new Date(m.measurement_date).toLocaleDateString("en-IN", {
+                              day: "numeric",
+                              month: "long",
+                              year: "numeric",
+                            })}
+                          </p>
+                          {visibleMetrics.length > 0 && (
+                            <div className="grid grid-cols-3 gap-x-3 gap-y-2">
+                              {visibleMetrics.map((k) => (
+                                <div key={k}>
+                                  <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                                    {METRIC_LABEL[k]}
+                                  </p>
+                                  <p className="text-sm font-semibold text-foreground">
+                                    {m[k]}
+                                    {METRIC_UNIT[k] && (
+                                      <span className="ml-0.5 text-xs font-normal text-muted-foreground">
+                                        {METRIC_UNIT[k]}
+                                      </span>
+                                    )}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {note && <p className="mt-2 text-xs text-muted-foreground">{note}</p>}
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
+                </SectionCard>
+              </>
+            )}
+          </>
+        )}
+      </div>
 
       {showCheckinForm && clientProfile && (
         <HealthCheckinForm
